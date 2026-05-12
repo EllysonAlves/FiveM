@@ -952,6 +952,7 @@ const vehHud = {
       fuel: 0,
       speed: 0,
       seatbelt: 0,
+      rpm: 0,
       showSquareB: 0,
       show: false,
       showAltitude: true,
@@ -977,7 +978,8 @@ const vehHud = {
       this.show = data.show;
       this.speed = data.speed;
       this.altitude = data.altitude;
-      this.fuel = (data.fuel * 0.71);
+      this.fuel = data.fuel;
+      this.rpm = Math.round((data.rpm || 0) * 100);
       this.showSeatbelt = data.showSeatbelt;
       this.showAltitude = data.showAltitude;
       this.showSquareB = data.showSquareB;

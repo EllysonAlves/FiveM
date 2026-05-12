@@ -601,3 +601,127 @@ speed:after{
   font-size:12px !important;
   font-weight:950 !important;
 }
+
+
+/* ==================== ALVES RACING SPEEDOMETER V4 - ROUND RPM GAUGE ==================== */
+.alves-vehicle-hud{
+  position:fixed !important;
+  left:31.4vh !important;
+  bottom:5.2vh !important;
+  z-index:42;
+  pointer-events:none;
+  font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.alves-speed-card{
+  width:156px !important;
+  min-height:156px !important;
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:7px;
+}
+
+.alves-speed-main,
+.alves-speed-bar,
+.alves-speed-fill,
+.alves-speed-arc{ display:none !important; }
+
+.alves-gauge-shell{
+  width:132px;
+  height:132px;
+  border-radius:50%;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(circle at center, rgba(8,9,15,.34) 0 48%, transparent 49%),
+    conic-gradient(from 225deg, #c084fc 0 var(--rpm), rgba(255,255,255,.18) var(--rpm) 72%, transparent 72% 100%);
+  filter:drop-shadow(0 0 16px rgba(168,85,247,.36)) drop-shadow(0 8px 14px rgba(0,0,0,.50));
+}
+
+.alves-gauge-shell::before{
+  content:"";
+  position:absolute;
+  inset:9px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(9,10,18,.58), rgba(9,10,18,.26));
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.alves-gauge-shell::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  border:1px solid rgba(192,132,252,.28);
+}
+
+.alves-gauge-center{
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+.alves-speed-value{
+  color:#fff;
+  font-size:39px !important;
+  line-height:.86;
+  font-weight:950;
+  letter-spacing:-1.4px;
+  text-shadow:0 0 16px rgba(168,85,247,.58), 0 2px 7px rgba(0,0,0,.9);
+}
+
+.alves-speed-unit{
+  margin-top:6px;
+  color:#d8b4fe;
+  font-size:10px !important;
+  font-weight:950;
+  letter-spacing:2px;
+}
+
+.alves-speed-footer{
+  width:156px;
+  display:flex;
+  justify-content:center;
+  gap:5px;
+  margin-top:-5px !important;
+}
+
+.alves-speed-pill{
+  flex:1;
+  min-height:28px !important;
+  max-width:52px;
+  border-radius:999px !important;
+  padding:4px 6px;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:rgba(8,9,15,.32) !important;
+  border:1px solid rgba(255,255,255,.08) !important;
+  box-shadow:0 6px 12px rgba(0,0,0,.24);
+}
+
+.alves-speed-pill span{
+  color:rgba(255,255,255,.50) !important;
+  font-size:7.5px !important;
+  font-weight:950 !important;
+  letter-spacing:.7px !important;
+}
+
+.alves-speed-pill strong{
+  color:#fff;
+  font-size:10.5px !important;
+  font-weight:950 !important;
+  line-height:1;
+}

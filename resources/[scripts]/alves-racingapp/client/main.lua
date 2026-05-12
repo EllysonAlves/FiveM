@@ -15,8 +15,8 @@ Config = Config or {}
 Config.CheckpointBuffer = Config.CheckpointBuffer or 5.0
 Config.MarkAmountOfCheckpointsAhead = Config.CheckpointsAhead or Config.MarkAmountOfCheckpointsAhead or 3
 Config.ShowGpsRoute = Config.ShowGpsRoute ~= false
-Config.UseRoadsForGps = Config.UseRoadsForGps == true
-Config.GpsColor = Config.GpsColor or 83
+Config.UseRoadsForGps = Config.UseRoadsForGps ~= false
+Config.GpsColor = Config.GpsColor or 5
 Config.BlipColor = Config.BlipColor or 85
 Config.DefaultTotalRacers = Config.DefaultTotalRacers or 1
 Config.DrawTextSetup = Config.DrawTextSetup or {
@@ -145,8 +145,6 @@ function setupBlipsForRace()
 end
 
 function updateGpsForRace()
-    -- Usamos rota custom por padrão para garantir traçado roxo vivo e espesso.
-    -- A rota nativa por ruas pode ficar cinza/vermelha dependendo do minimap/HUD.
     ClearGpsMultiRoute()
     ClearGpsCustomRoute()
 
@@ -176,10 +174,9 @@ function updateGpsForRace()
     end
     
     if Config.UseRoadsForGps then
-        SetGpsMultiRouteRender(Config.ShowGpsRoute)
+        SetGpsMultiRouteRender(Config.ShowGpsRoute, Config.GpsColor, Config.GpsColor)
     else
-        -- radarThickness/mapThickness altos deixam a linha bem visível no minimapa/mapa.
-        SetGpsCustomRouteRender(Config.ShowGpsRoute, 18, 18)
+        SetGpsCustomRouteRender(Config.ShowGpsRoute, Config.GpsColor, Config.GpsColor)
     end
 end
 
@@ -194,7 +191,7 @@ function nextBlip(blip)
     if DoesBlipExist(blip) then
         SetBlipColour(blip, 85) -- Roxo vivo (próximo)
         SetBlipRoute(blip, true)
-        SetBlipRouteColour(blip, Config.GpsColor or 83)
+        SetBlipRouteColour(blip, Config.GpsColor or 5)
     end
 end
 

@@ -32,8 +32,8 @@ Config.LapsByDistance = {
 Config.CheckpointsAhead = 3
 Config.CheckpointBuffer = 5.0
 Config.ShowGpsRoute = true
-Config.UseRoadsForGps = false
-Config.GpsColor = 83
+Config.UseRoadsForGps = true
+Config.GpsColor = 5
 Config.BlipColor = 85
 
 Config.DrawTextSetup = {

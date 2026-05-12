@@ -409,3 +409,12 @@
     bottom:5.8vh !important;
   }
 }
+
+
+/* ALVES RACING SPEEDOMETER V4 RESPONSIVE */
+@media (min-width:1px){
+  .alves-vehicle-hud{
+    left:31.4vh !important;
+    bottom:5.2vh !important;
+  }
+}

@@ -560,7 +560,7 @@ local function updatePlayerHud(data)
     end
 end
 
-local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 
 local function updateVehicleHud(data)
     local shouldUpdate = false
@@ -582,6 +582,7 @@ local function updateVehicleHud(data)
             showSeatbelt = data[8],
             showSquareB = data[9],
             showCircleB = data[10],
+            rpm = data[11],
         })
     end
 end
@@ -725,6 +726,7 @@ CreateThread(function()
                     showSeatbelt,
                     showSquareB,
                     showCircleB,
+                    GetVehicleCurrentRpm(cache.vehicle),
                 })
                 showAltitude = false
                 showSeatbelt = true
