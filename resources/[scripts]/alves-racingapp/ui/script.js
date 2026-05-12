@@ -252,26 +252,65 @@ function displayRanking(data) {
 
 function displayProfile(data) {
     $$('.modal').forEach(m => m.classList.add('hidden'));
-    setText('#profile-name', `PERFIL - ${data?.racername || 'PILOTO'}`);
+    setText('#profile-name', 'MEU PERFIL');
+
     const winRate = data?.races > 0 ? ((data.wins / data.races) * 100).toFixed(1) : '0.0';
-    const bestTimeFormatted = data?.bestTime > 0 ? formatTime(data.bestTime) : 'N/A';
-    const tierProgress = data?.tierMaxPoints > 0 ? ((data.pointsInTier / data.tierMaxPoints) * 100).toFixed(1) : 0;
+    const bestTimeFormatted = data?.bestTime > 0 ? formatTime(data.bestTime) : '--:--.---';
+    const tierProgress = data?.tierMaxPoints > 0 ? Math.min(100, ((data.pointsInTier / data.tierMaxPoints) * 100)).toFixed(1) : 0;
     const tierColor = data?.tierColor || '#a855f7';
+    const racerName = data?.racername || 'Piloto';
+    const initials = racerName.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'AR';
 
     setHtml('#profile-stats', `
-        <div class="tier-card" style="grid-column:1/-1; background: linear-gradient(135deg, ${tierColor}20 0%, ${tierColor}10 100%); border-left-color:${tierColor};">
-            <div class="tier-header"><div><span class="tier-label">TIER ATUAL</span><span class="tier-name" style="color:${tierColor};">${data?.eloTier || 'Street'}</span></div><span class="tier-points" style="color:${tierColor};">${data?.eloPoints || 0} PTS</span></div>
-            <div class="tier-progress-container"><div class="tier-progress-bar"><div class="tier-progress-fill" style="width:${tierProgress}%; background:${tierColor};"></div></div><span class="tier-progress-text">${data?.pointsInTier || 0}/${data?.tierMaxPoints || 100} pontos para próximo tier</span></div>
+        <div class="profile-hero" style="--tier-color:${tierColor};">
+            <div class="profile-avatar">${initials}</div>
+            <div class="profile-hero-info">
+                <span class="profile-kicker">PILOTO ALVES RACING</span>
+                <strong>${racerName}</strong>
+                <div class="profile-tier-line">
+                    <span class="profile-tier-badge" style="border-color:${tierColor}; color:${tierColor};">${data?.eloTier || 'Street'}</span>
+                    <span>${data?.eloPoints || 0} PTS</span>
+                </div>
+            </div>
+            <div class="profile-rank-box">
+                <span>RANK</span>
+                <strong>#${data?.position || 'N/A'}</strong>
+            </div>
         </div>
-        <div class="stat-row"><span class="stat-label">NOME DO PILOTO</span><span class="stat-value">${data?.racername || 'Desconhecido'}</span></div>
-        <div class="stat-row"><span class="stat-label">POSIÇÃO NO RANKING</span><span class="stat-value">#${data?.position || 'N/A'}</span></div>
-        <div class="stat-row"><span class="stat-label">CORRIDAS</span><span class="stat-value">${data?.races || 0}</span></div>
-        <div class="stat-row"><span class="stat-label">VITÓRIAS</span><span class="stat-value">${data?.wins || 0}</span></div>
-        <div class="stat-row"><span class="stat-label">TAXA DE VITÓRIA</span><span class="stat-value">${winRate}%</span></div>
-        <div class="stat-row"><span class="stat-label">MELHOR TEMPO</span><span class="stat-value">${bestTimeFormatted}</span></div>`);
+
+        <div class="profile-progress-card" style="--tier-color:${tierColor};">
+            <div class="profile-progress-head">
+                <span>PROGRESSO DO TIER</span>
+                <strong>${data?.pointsInTier || 0}/${data?.tierMaxPoints || 100}</strong>
+            </div>
+            <div class="tier-progress-bar"><div class="tier-progress-fill" style="width:${tierProgress}%; background:${tierColor};"></div></div>
+            <small>${tierProgress}% para o próximo marco</small>
+        </div>
+
+        <div class="profile-metric-card">
+            <span class="metric-label">CORRIDAS</span>
+            <strong>${data?.races || 0}</strong>
+            <small>Total finalizadas</small>
+        </div>
+        <div class="profile-metric-card">
+            <span class="metric-label">VITÓRIAS</span>
+            <strong>${data?.wins || 0}</strong>
+            <small>${winRate}% win rate</small>
+        </div>
+        <div class="profile-metric-card">
+            <span class="metric-label">MELHOR TEMPO</span>
+            <strong>${bestTimeFormatted}</strong>
+            <small>Recorde pessoal</small>
+        </div>
+        <div class="profile-metric-card">
+            <span class="metric-label">ELO</span>
+            <strong style="color:${tierColor};">${data?.eloPoints || 0}</strong>
+            <small>Pontuação atual</small>
+        </div>
+    `);
+
     removeClass('#modal-profile', 'hidden');
 }
-
 function closeModal() {
     $$('.modal').forEach(m => m.classList.add('hidden'));
 }

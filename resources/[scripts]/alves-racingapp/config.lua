@@ -33,7 +33,7 @@ Config.CheckpointsAhead = 3
 Config.CheckpointBuffer = 5.0
 Config.ShowGpsRoute = true
 Config.UseRoadsForGps = true
-Config.GpsColor = 83
+Config.GpsColor = 85
 Config.BlipColor = 85
 
 Config.DrawTextSetup = {

@@ -409,3 +409,97 @@ speed:after{
   letter-spacing:1.8px;
   color:rgba(255,255,255,.78);
 }
+
+
+/* ==================== ALVES RACING CUSTOM VEHICLE HUD ==================== */
+#veh-container .responsive,
+#veh-container #speedometer,
+#veh-container #fuelgauge,
+#veh-container #altitudegauge,
+#veh-container #seatbelt{
+  display:none !important;
+}
+
+.alves-vehicle-hud{
+  position:fixed;
+  left:31.5vh;
+  bottom:5.4vh;
+  z-index:42;
+  pointer-events:none;
+  font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.alves-speed-card{
+  width:154px;
+  min-height:154px;
+  border-radius:28px;
+  padding:12px;
+  background:linear-gradient(180deg, rgba(7,8,14,.82), rgba(5,6,11,.70));
+  border:1px solid rgba(168,85,247,.38);
+  box-shadow:0 16px 36px rgba(0,0,0,.45), 0 0 32px rgba(168,85,247,.18), inset 0 0 20px rgba(168,85,247,.06);
+  backdrop-filter:blur(2px);
+}
+
+.alves-speed-arc{
+  width:130px;
+  height:108px;
+  margin:0 auto;
+  border-radius:70px 70px 22px 22px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(circle at center, rgba(9,10,18,.94) 0%, rgba(9,10,18,.88) 56%, transparent 57%),
+    conic-gradient(from 225deg, #c084fc 0deg, #a855f7 185deg, rgba(255,255,255,.14) 186deg 270deg, transparent 271deg);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.alves-speed-value{
+  color:#fff;
+  font-size:42px;
+  line-height:.9;
+  font-weight:950;
+  letter-spacing:-1.5px;
+  text-shadow:0 0 18px rgba(168,85,247,.62), 0 2px 6px rgba(0,0,0,.9);
+}
+
+.alves-speed-unit{
+  margin-top:7px;
+  color:rgba(255,255,255,.72);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+
+.alves-speed-footer{
+  display:flex;
+  gap:6px;
+  margin-top:8px;
+}
+
+.alves-speed-pill{
+  flex:1;
+  min-height:36px;
+  border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.075);
+}
+
+.pill-label{
+  color:rgba(255,255,255,.48);
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+
+.pill-value{
+  color:#fff;
+  font-size:14px;
+  font-weight:950;
+  line-height:1.1;
+}

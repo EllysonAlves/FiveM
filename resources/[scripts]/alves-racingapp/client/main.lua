@@ -16,7 +16,7 @@ Config.CheckpointBuffer = Config.CheckpointBuffer or 5.0
 Config.MarkAmountOfCheckpointsAhead = Config.CheckpointsAhead or Config.MarkAmountOfCheckpointsAhead or 3
 Config.ShowGpsRoute = Config.ShowGpsRoute ~= false
 Config.UseRoadsForGps = Config.UseRoadsForGps ~= false
-Config.GpsColor = Config.GpsColor or 83
+Config.GpsColor = Config.GpsColor or 85
 Config.BlipColor = Config.BlipColor or 85
 Config.DefaultTotalRacers = Config.DefaultTotalRacers or 1
 Config.DrawTextSetup = Config.DrawTextSetup or {
@@ -107,6 +107,7 @@ end
 function clearCheckpoints()
     for _, blip in pairs(checkpointBlips) do
         if DoesBlipExist(blip) then
+            SetBlipRoute(blip, false)
             RemoveBlip(blip)
         end
     end
@@ -137,7 +138,7 @@ function setupBlipsForRace()
     end
     
     if checkpointBlips[CurrentRaceData.CurrentCheckpoint + 1] then
-        SetBlipColour(checkpointBlips[CurrentRaceData.CurrentCheckpoint + 1], 83) -- Roxo claro (próximo)
+        nextBlip(checkpointBlips[CurrentRaceData.CurrentCheckpoint + 1])
     end
     
     updateGpsForRace()
@@ -180,13 +181,16 @@ end
 
 function passedBlip(blip)
     if DoesBlipExist(blip) then
+        SetBlipRoute(blip, false)
         SetBlipColour(blip, 79) -- Roxo escuro (completo)
     end
 end
 
 function nextBlip(blip)
     if DoesBlipExist(blip) then
-        SetBlipColour(blip, 83) -- Roxo claro (próximo)
+        SetBlipColour(blip, 85) -- Roxo vivo (próximo)
+        SetBlipRoute(blip, true)
+        SetBlipRouteColour(blip, Config.GpsColor or 85)
     end
 end
 
