@@ -1370,3 +1370,38 @@ speed:after{
 .ref-gauge .ref-needle{
   transition:transform .06s linear, background .06s linear;
 }
+
+
+/* ==================== ALVES RACING RPM SYNC V10 ==================== */
+/* Aro e ponteiro usam exatamente a mesma variável: --rpm-deg. */
+.ref-ring{
+  background:
+    radial-gradient(circle at center, rgba(5,5,10,0) 0 49%, rgba(8,8,14,.30) 50% 60%, transparent 61%),
+    conic-gradient(from 222deg, var(--purple) 0 var(--rpm-deg, 0deg), rgba(235,235,245,.22) var(--rpm-deg, 0deg) 276deg, transparent 276deg 360deg) !important;
+}
+
+.ref-needle{
+  transform:rotate(calc(222deg + var(--rpm-deg, 0deg))) !important;
+}
+
+.ref-rpm-caption{
+  margin-bottom:8px;
+  color:rgba(216,180,254,.72);
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:2px;
+  text-shadow:0 0 8px rgba(180,92,255,.45);
+}
+
+/* Escala agora é RPM x1000, então os números são menores e mais limpos. */
+.ref-scale .n{
+  font-size:16px !important;
+  color:rgba(245,243,255,.88) !important;
+}
+
+.ref-scale .n100,
+.ref-scale .n120,
+.ref-scale .n140,
+.ref-scale .n160{
+  color:rgba(255,210,210,.92) !important;
+}
