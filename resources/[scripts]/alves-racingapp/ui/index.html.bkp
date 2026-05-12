@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alves Racing</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- TABLET DE GERENCIAMENTO -->
+    <div id="tablet" class="tablet hidden">
+        <div class="tablet-content">
+            <div class="tablet-header">
+                <h1>🏁 ALVES RACING</h1>
+                <button class="close-btn" onclick="closeTablet()">×</button>
+            </div>
+            
+            <div class="tablet-body">
+                <div class="menu-item" onclick="startRace('ranked')">
+                    <div class="menu-icon">🏆</div>
+                    <div class="menu-text">
+                        <h3>CORRIDA RANKED</h3>
+                        <p>Afeta seu ELO e ranking</p>
+                    </div>
+                </div>
+                
+                <div class="menu-item" onclick="startRace('unranked')">
+                    <div class="menu-icon">🚗</div>
+                    <div class="menu-text">
+                        <h3>CORRIDA CASUAL</h3>
+                        <p>Apenas por diversão</p>
+                    </div>
+                </div>
+                
+                <div class="menu-item" onclick="showScoreboard()">
+                    <div class="menu-icon">📊</div>
+                    <div class="menu-text">
+                        <h3>SCOREBOARD</h3>
+                        <p>Últimas corridas</p>
+                    </div>
+                </div>
+                
+                <div class="menu-item" onclick="showRanking()">
+                    <div class="menu-icon">🏆</div>
+                    <div class="menu-text">
+                        <h3>RANKING GLOBAL</h3>
+                        <p>Top pilotos</p>
+                    </div>
+                </div>
+                
+                <div class="menu-item" onclick="showProfile()">
+                    <div class="menu-icon">👤</div>
+                    <div class="menu-text">
+                        <h3>MEU PERFIL</h3>
+                        <p id="profile-elo">ELO: Carregando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- HUD DE CORRIDA -->
+    <div id="race-hud" class="race-hud hidden">
+        <!-- Contador regressivo -->
+        <div id="countdown" class="countdown hidden">
+            <span id="countdown-number">5</span>
+        </div>
+        
+        <!-- Informações da corrida -->
+        <div class="race-info">
+            <div class="info-item">
+                <span class="label">POSIÇÃO</span>
+                <span id="race-position" class="value">1º</span>
+            </div>
+            <div class="info-item">
+                <span class="label">VOLTA</span>
+                <span id="race-lap" class="value">1/3</span>
+            </div>
+            <div class="info-item">
+                <span class="label">TEMPO</span>
+                <span id="race-time" class="value">00:00</span>
+            </div>
+            <div class="info-item">
+                <span class="label">CHECKPOINT</span>
+                <span id="race-checkpoint" class="value">1/10</span>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

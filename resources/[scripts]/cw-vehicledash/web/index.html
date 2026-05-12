@@ -1,0 +1,476 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vehicle Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0d0f14;
+      --surface:    #13161e;
+      --surface2:   #1a1e2a;
+      --surface3:   #222737;
+      --border:     #2a2f42;
+      --accent:     #4f8ef7;
+      --accent2:    #6c63ff;
+      --text:       #e8eaf0;
+      --muted:      #7b82a0;
+      --success:    #2ecc71;
+      --danger:     #e74c3c;
+      --warn:       #f39c12;
+    }
+
+    html, body { width: 100%; height: 100%; background: transparent; overflow: hidden;
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; color: var(--text); }
+
+    /* ── Overlay ── */
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.6);
+      align-items: center; justify-content: center;
+      z-index: 10;
+    }
+
+    /* ── Tablet ── */
+    .tablet {
+      width: 920px; max-width: 96vw;
+      height: 680px; max-height: 94vh;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.04);
+    }
+
+    /* ── Header ── */
+    .hdr {
+      padding: 16px 22px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    .hdr-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .hdr-text { flex: 1; }
+    .hdr-title { font-size: 15px; font-weight: 700; letter-spacing: .2px; }
+    .hdr-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .btn-close {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--surface3); border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, color .15s;
+    }
+    .btn-close:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      padding: 10px 22px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+    }
+    .search-wrap { position: relative; flex: 1; }
+    .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; }
+    .search {
+      width: 100%; height: 34px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0 12px 0 32px;
+      color: var(--text); font-size: 13px; outline: none;
+      transition: border-color .15s;
+    }
+    .search:focus { border-color: var(--accent); }
+    .tabs { display: flex; gap: 6px; }
+    .tab {
+      height: 34px; padding: 0 14px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: all .15s;
+    }
+    .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .tab:not(.active):hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── Layout ── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 205px; flex-shrink: 0;
+      background: var(--surface); border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 10px 8px;
+    }
+    .sidebar::-webkit-scrollbar { width: 3px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .sidebar-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted); padding: 6px 8px 4px;
+    }
+    .sitem {
+      height: 36px; padding: 0 8px; border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      transition: all .12s; margin-bottom: 2px;
+    }
+    .sitem:hover { background: var(--surface2); color: var(--text); }
+    .sitem.active { background: rgba(79,142,247,.14); color: var(--accent); }
+    .si-icon { font-size: 14px; flex-shrink: 0; }
+    .si-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .si-badge {
+      font-size: 10px; padding: 1px 7px;
+      background: var(--surface3); border-radius: 20px; color: var(--muted);
+      margin-left: auto; flex-shrink: 0;
+    }
+    .sitem.active .si-badge { background: rgba(79,142,247,.2); color: var(--accent); }
+    .cls-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Main ── */
+    .main { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 7px; }
+    .main::-webkit-scrollbar { width: 3px; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 11px; padding: 12px 14px;
+      display: flex; align-items: center; gap: 12px;
+      transition: border-color .12s, background .12s;
+    }
+    .card:hover { border-color: var(--accent); background: var(--surface2); }
+
+    .card-img { width: 110px; height: 66px; flex-shrink: 0; border-radius: 8px; background: var(--surface3); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .cls-badge {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; font-weight: 800; flex-shrink: 0;
+    }
+    .cls-X { background: rgba(255,77,109,.15);  color: #ff4d6d; }
+    .cls-S { background: rgba(255,159,67,.15);  color: #ff9f43; }
+    .cls-A { background: rgba(255,211,42,.15);  color: #ffd32a; }
+    .cls-B { background: rgba(46,204,113,.15);  color: #2ecc71; }
+    .cls-C { background: rgba(84,160,255,.15);  color: #54a0ff; }
+    .cls-D { background: rgba(162,155,254,.15); color: #a29bfe; }
+    .cls-E { background: rgba(99,110,114,.15);  color: #636e72; }
+    .cls-  { background: var(--surface3);       color: var(--muted); }
+
+    .card-info { flex: 1; min-width: 0; }
+    .card-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .card-score { font-size: 12px; color: var(--muted); text-align: right; flex-shrink: 0; }
+    .card-score .val { display: block; font-size: 15px; font-weight: 700; color: var(--text); }
+
+    .btn-spawn {
+      height: 32px; padding: 0 14px; border-radius: 8px; border: none;
+      background: var(--accent); color: #fff;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background .12s, transform .1s; flex-shrink: 0;
+    }
+    .btn-spawn:hover { background: #3a7de8; }
+    .btn-spawn:active { transform: scale(.96); }
+
+    /* ── States ── */
+    .state-box {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+      color: var(--muted); font-size: 14px;
+    }
+    .state-box .icon { font-size: 36px; }
+    .spinner {
+      width: 34px; height: 34px;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin .65s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 22px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--surface3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 9px 18px;
+      font-size: 13px; font-weight: 500;
+      box-shadow: 0 8px 30px rgba(0,0,0,.5);
+      opacity: 0; pointer-events: none; z-index: 20;
+      transition: transform .2s ease, opacity .2s ease;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.success { border-color: var(--success); color: var(--success); }
+    .toast.error   { border-color: var(--danger);  color: var(--danger);  }
+    .toast.info    { border-color: var(--accent);  color: var(--accent);  }
+  </style>
+</head>
+<body>
+
+<div id="overlay">
+  <div class="tablet">
+
+    <div class="hdr">
+      <div class="hdr-icon">🚗</div>
+      <div class="hdr-text">
+        <div class="hdr-title">Vehicle Dashboard</div>
+        <div class="hdr-sub" id="hdr-sub">Carregando...</div>
+      </div>
+      <button class="btn-close" id="btn-close">✕</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search" id="search-input" type="text" placeholder="Buscar veículo..." autocomplete="off" />
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="sidebar" id="sidebar"></div>
+      <div class="main" id="main"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Constants ──────────────────────────────────────────────────────────────
+  const CLASS_ORDER  = ['X', 'S', 'A', 'B', 'C', 'D', 'E'];
+  const CLASS_COLORS = { X:'#ff4d6d', S:'#ff9f43', A:'#ffd32a', B:'#2ecc71', C:'#54a0ff', D:'#a29bfe', E:'#636e72' };
+  const CLASS_LABELS = { X:'X — Elite', S:'S — Super', A:'A — Sport', B:'B — Performance', C:'C — Compacto Sport', D:'D — Compacto', E:'E — Básico' };
+  const CAT_ICONS    = { super:'🏎️', sports:'🚗', muscle:'🚙', sportsclassics:'🏛️', suv:'🚐', offroad:'🛻', compacts:'🚕', sedans:'🚘', coupes:'🚗', vans:'🚌', cycles:'🏍️', motorcycles:'🏍️', boats:'⛵', helicopters:'🚁', planes:'✈️', emergency:'🚨', service:'🚒', commercial:'🚛', industrial:'🏗️', military:'🪖', openwheel:'🏁' };
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  const state = {
+    vehicles:    [],
+    activeGroup: null,
+    search:      '',
+    loading:     false,
+  };
+
+  // ── NUI Messages ───────────────────────────────────────────────────────────
+  window.addEventListener('message', function(ev) {
+    const msg = ev.data;
+    if (!msg || !msg.action) return;
+
+    if (msg.action === 'open') {
+      var vList = msg.data && msg.data.vehicles ? msg.data.vehicles : [];
+      // JA VEM COM CLASSE E SCORE DO SERVIDOR (sem calcular)
+      state.vehicles    = vList;
+      state.activeGroup = 'S'; // Seleciona Classe S automaticamente
+      state.search      = '';
+      state.loading     = false; // Nao precisa calcular
+
+      document.getElementById('search-input').value = '';
+      document.getElementById('hdr-sub').textContent = state.vehicles.length + ' carros JFx Classe S';
+      document.getElementById('overlay').style.display = 'flex';
+      render();
+      return;
+    }
+
+    if (msg.action === 'close')     { closeOverlay(); return; }
+    if (msg.action === 'spawnOk')   { showToast('✅ ' + ((msg.data && msg.data.name) || 'Veículo') + ' spawnado!', 'success'); return; }
+    if (msg.action === 'spawnFail') { showToast('❌ Falha ao spawnar o veículo', 'error'); return; }
+  });
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function findVehicle(modelName) {
+    for (var i = 0; i < state.vehicles.length; i++) {
+      if (state.vehicles[i].modelName === modelName) return state.vehicles[i];
+    }
+    return null;
+  }
+
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+  function getGroups() {
+    return CLASS_ORDER.slice();
+  }
+
+  function getFiltered() {
+    var list = state.vehicles;
+    if (state.activeGroup && state.activeGroup !== '__search__') {
+      list = list.filter(function(v) { return v.class === state.activeGroup; });
+    }
+    if (state.search) {
+      var q = state.search.toLowerCase();
+      list = list.filter(function(v) {
+        return v.name.toLowerCase().indexOf(q) !== -1 ||
+               (v.brand || '').toLowerCase().indexOf(q) !== -1 ||
+               v.modelName.toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    return list;
+  }
+
+  function nui(action, data) {
+    fetch('https://cw-vehicledash/' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
+    }).catch(function() {});
+  }
+
+  // ── Select group ───────────────────────────────────────────────────────────
+  function selectGroup(group) {
+    state.activeGroup = group;
+    render();
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  function render() { renderSidebar(); renderMain(); }
+
+  function renderSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    sidebar.innerHTML = '';
+
+    var lbl = document.createElement('div');
+    lbl.className = 'sidebar-label';
+    lbl.textContent = state.filterMode === 'category' ? 'Categorias' : 'Classes';
+    sidebar.appendChild(lbl);
+
+    var groups = getGroups();
+    groups.forEach(function(g) {
+      var el = document.createElement('div');
+      el.className = 'sitem' + (state.activeGroup === g ? ' active' : '');
+      el.onclick = function() { selectGroup(g); };
+
+      if (state.filterMode === 'category') {
+        var count = state.vehicles.filter(function(v) { return v.category === g; }).length;
+        el.innerHTML =
+          '<span class="si-icon">' + (CAT_ICONS[g] || '🚗') + '</span>' +
+          '<span class="si-label">' + cap(g) + '</span>' +
+          '<span class="si-badge">' + count + '</span>';
+      } else {
+        var cnt = state.vehicles.filter(function(v) { return v.class === g; }).length;
+        el.innerHTML =
+          '<div class="cls-dot" style="background:' + (CLASS_COLORS[g] || '#636e72') + '"></div>' +
+          '<span class="si-label">' + CLASS_LABELS[g] + '</span>' +
+          '<span class="si-badge">' + (cnt > 0 ? cnt : '?') + '</span>';
+      }
+
+      sidebar.appendChild(el);
+    });
+  }
+
+  function renderMain() {
+    var el   = document.getElementById('main');
+    var list = getFiltered();
+
+    // No group selected and no search
+    if (!state.activeGroup && !state.search) {
+      el.innerHTML = state.loading
+        ? '<div class="state-box"><div class="spinner"></div><p>Calculando classes, aguarde...</p></div>'
+        : '<div class="state-box"><div class="icon">&#128072;</div><p>Selecione uma classe ao lado</p></div>';
+      return;
+    }
+
+    if (list.length === 0 && state.loading) {
+      el.innerHTML = '<div class="state-box"><div class="spinner"></div><p>Calculando classes...</p></div>';
+      return;
+    }
+
+    if (list.length === 0) {
+      el.innerHTML = '<div class="state-box"><div class="icon">&#128269;</div><p>Nenhum veículo encontrado</p></div>';
+      return;
+    }
+
+    // Sort by class then name
+    var sorted = list.slice().sort(function(a, b) {
+      var ia = CLASS_ORDER.indexOf(a.class), ib = CLASS_ORDER.indexOf(b.class);
+      if (ia !== ib) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      return a.name.localeCompare(b.name);
+    });
+
+    el.innerHTML = '';
+    sorted.forEach(function(v) {
+      var cls  = v.class || '';
+      var card = document.createElement('div');
+      card.className = 'card';
+
+      var scoreHtml = v.score
+        ? '<div class="card-score"><span style="font-size:11px;color:var(--muted)">Score</span><span class="val">' + v.score + '</span></div>'
+        : '';
+
+      card.innerHTML =
+        '<div class="card-img"><img src="https://docs.fivem.net/vehicles/' + v.modelName.toLowerCase() + '.webp" onerror="this.style.display=\'none\'" alt=""/></div>' +
+        '<div class="cls-badge cls-' + cls + '">' + (cls || '...') + '</div>' +
+        '<div class="card-info">' +
+          '<div class="card-name">' + v.name + '</div>' +
+          '<div class="card-meta">' + cap(v.category) + '</div>' +
+        '</div>' +
+        scoreHtml +
+        '<button class="btn-spawn">Spawnar</button>';
+
+      card.querySelector('.btn-spawn').onclick = function(e) {
+        e.stopPropagation();
+        nui('spawnVehicle', { modelName: v.modelName, name: v.name });
+        showToast('Spawnando ' + v.name + '...', 'info');
+      };
+
+      el.appendChild(card);
+    });
+
+    // Loading spinner enquanto ainda ha veiculos sem classe
+    if (state.loading) {
+      var bar = document.createElement('div');
+      bar.className = 'state-box';
+      bar.style.flex = 'none';
+      bar.style.padding = '16px';
+      bar.innerHTML = '<div class="spinner"></div><p style="font-size:12px">Calculando classes restantes...</p>';
+      el.appendChild(bar);
+    }
+  }
+
+  // ── UI Controls ────────────────────────────────────────────────────────────
+
+  document.getElementById('search-input').oninput = function(e) {
+    state.search = e.target.value.trim();
+    if (state.search && !state.activeGroup) state.activeGroup = '__search__';
+    if (!state.search && state.activeGroup === '__search__') state.activeGroup = null;
+    render();
+  };
+
+  document.getElementById('btn-close').onclick = closeUI;
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeUI(); });
+  document.getElementById('overlay').onclick = function(e) {
+    if (e.target === document.getElementById('overlay')) closeUI();
+  };
+
+  function closeOverlay() { document.getElementById('overlay').style.display = 'none'; }
+  function closeUI() { closeOverlay(); nui('closeUI', {}); }
+
+  // ── Debug shortcut (F9 abre com dados falsos no browser) ───────────────────
+  document.addEventListener('keydown', function(ev) {
+    if (ev.key !== 'F9') return;
+    var clss  = ['S','S','A','A','A','B','B','C','X','S'];
+    var cats  = ['super','sports','sports','sports','super','super','super','sports','super','sports'];
+    var names = ['Adder','Banshee','Zentorno','Infernus','T20','Vagner','Emerus','Pariah','Cyclone','Deveste'];
+    var fake  = names.map(function(n, i) { return { modelName: n.toLowerCase(), name: n, brand: 'Test', category: cats[i] }; });
+    window.dispatchEvent(new MessageEvent('message', { data: { action: 'open', data: { vehicles: fake } } }));
+    setTimeout(function() {
+      var res = fake.map(function(v, i) { return { modelName: v.modelName, class: clss[i], score: 400 + i * 60, group: '__all__' }; });
+      window.dispatchEvent(new MessageEvent('message', { data: { action: 'classResult', data: res } }));
+    }, 300);
+  });
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  var toastTimer;
+  function showToast(msg, type, dur) {
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show ' + (type || '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { el.className = 'toast'; }, dur || 3000);
+  }
+</script>
+</body>
+</html>

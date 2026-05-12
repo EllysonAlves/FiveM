@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alves Racing</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- TABLET -->
+    <div id="tablet" class="tablet hidden">
+        <div class="tablet-wrapper">
+            <!-- SIDEBAR -->
+            <div class="tablet-sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-logo">
+                        <i class="fas fa-flag-checkered"></i>
+                    </div>
+                    <h3>ALVES RACING</h3>
+                    <p class="sidebar-subtitle">Escolha uma opção para começar</p>
+                </div>
+                <div class="sidebar-menu">
+                    <div class="menu-item active">
+                        <i class="fas fa-th-large"></i>
+                        <span>DASHBOARD</span>
+                    </div>
+                    <div class="menu-item">
+                        <i class="fas fa-flag-checkered"></i>
+                        <span>CORRIDAS</span>
+                    </div>
+                    <div class="menu-item" onclick="showRanking()">
+                        <i class="fas fa-trophy"></i>
+                        <span>RANKING</span>
+                    </div>
+                    <div class="menu-item">
+                        <i class="fas fa-warehouse"></i>
+                        <span>GARAGEM</span>
+                    </div>
+                    <div class="menu-item">
+                        <i class="fas fa-user"></i>
+                        <span>PERFIL</span>
+                    </div>
+                    <div class="menu-item">
+                        <i class="fas fa-cog"></i>
+                        <span>CONFIGURAÇÕES</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT -->
+            <div class="tablet-main">
+                <!-- HEADER -->
+                <div class="main-header">
+                    <div class="header-welcome">
+                        <i class="fas fa-user-circle"></i>
+                        <div>
+                            <span class="header-id">ID: <span id="player-id">1050</span></span>
+                            <span class="header-name" id="player-name">Alves0</span>
+                        </div>
+                    </div>
+                    <div class="header-info">
+                        <div class="header-stat">
+                            <i class="fas fa-users"></i>
+                            <span><span id="online-players">1,234</span> Jogadores online</span>
+                        </div>
+                        <button class="header-close" onclick="closeTablet()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DASHBOARD CONTENT -->
+                <div class="dashboard-content">
+                    <!-- WELCOME BANNER -->
+                    <div class="welcome-banner">
+                        <div class="banner-overlay">
+                            <div class="banner-content">
+                                <h2>Bem-vindo de volta, piloto! 👋</h2>
+                                <p>Pronto para acelerar e bater novos recordes?</p>
+                            </div>
+                            <div class="banner-level">
+                                <div class="level-badge">
+                                    <span class="level-label">NÍVEL</span>
+                                    <span class="level-number" id="player-level">25</span>
+                                </div>
+                                <div class="level-progress">
+                                    <p class="level-text">Próximo level: <span id="level-progress">3,450 / 6,000 XP</span></p>
+                                    <div class="level-bar">
+                                        <div class="level-fill" id="level-fill" style="width: 57.5%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RACE TYPE CARDS -->
+                    <div class="race-cards-grid">
+                        <div class="race-type-card ranked-card" onclick="startRace('ranked')">
+                            <div class="race-card-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <h3>CORRIDA RANKED</h3>
+                            <p>Compita e suba no ranking</p>
+                            <button class="race-card-btn ranked-btn">JOGAR AGORA</button>
+                        </div>
+
+                        <div class="race-type-card casual-card" onclick="startRace('casual')">
+                            <div class="race-card-icon">
+                                <i class="fas fa-car"></i>
+                            </div>
+                            <h3>CORRIDA CASUAL</h3>
+                            <p>Apenas por diversão</p>
+                            <button class="race-card-btn casual-btn">JOGAR AGORA</button>
+                        </div>
+
+                        <div class="race-type-card scoreboard-card" onclick="showScoreboard()">
+                            <div class="race-card-icon">
+                                <i class="fas fa-list"></i>
+                            </div>
+                            <h3>SCOREBOARD</h3>
+                            <p>Últimas corridas</p>
+                            <button class="race-card-btn scoreboard-btn">VER AGORA</button>
+                        </div>
+                    </div>
+
+                    <!-- PLAYER STATS -->
+                    <div class="player-stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon purple-icon">
+                                <i class="fas fa-flag-checkered"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">CORRIDAS</span>
+                                <span class="stat-number" id="stats-races">128</span>
+                                <span class="stat-sub">Total de corridas</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon yellow-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">VITÓRIAS</span>
+                                <span class="stat-number" id="stats-wins">45</span>
+                                <span class="stat-sub">35.2% de vitórias</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon blue-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">TEMPO TOTAL</span>
+                                <span class="stat-number" id="stats-time">24h 32m</span>
+                                <span class="stat-sub">Tempo correndo</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon green-icon">
+                                <i class="fas fa-stopwatch"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">MELHOR VOLTA</span>
+                                <span class="stat-number" id="stats-best">01:23.456</span>
+                                <span class="stat-sub">Recorde pessoal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RANKING GLOBAL -->
+    <div id="modal-ranking" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-globe-americas"></i>
+                    <h2>RANKING GLOBAL</h2>
+                </div>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="ranking-grid" id="ranking-list">
+                    <!-- Conteúdo dinâmico -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SCOREBOARD -->
+    <div id="modal-scoreboard" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-chart-bar"></i>
+                    <h2 id="scoreboard-title">SCOREBOARD</h2>
+                </div>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>PILOTO</th>
+                            <th>VEÍCULO</th>
+                            <th>TEMPO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scoreboard-tbody">
+                        <!-- Conteúdo dinâmico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PERFIL -->
+    <div id="modal-profile" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-user-circle"></i>
+                    <h2 id="profile-name">MEU PERFIL</h2>
+                </div>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="profile-stats" id="profile-stats">
+                    <!-- Conteúdo dinâmico -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COUNTDOWN (SEPARADO DO HUD) -->
+    <div id="countdown" class="countdown hidden">
+        <span id="countdown-number">5</span>
+    </div>
+
+    <!-- HUD DE CORRIDA -->
+    <div id="race-hud" class="race-hud hidden">
+        <div class="race-header">
+            <h2 class="race-title">ALVES RACING</h2>
+            <p class="race-subtitle">↓ CORRIDA DE RUA</p>
+        </div>
+        <div class="race-divider"></div>
+        <div class="race-stats">
+            <div class="stat-row">
+                <span class="stat-label">POSIÇÃO</span>
+                <span id="race-position" class="stat-value">1º <span class="stat-total">/ 3</span></span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">VOLTA</span>
+                <span id="race-lap" class="stat-value">1 <span class="stat-total">/ 3</span></span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">TEMPO ATUAL</span>
+                <span id="race-time" class="stat-value">00:00.000</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">MELHOR VOLTA</span>
+                <span id="race-best-lap" class="stat-value">--:--.---</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">CHECKPOINT</span>
+                <span id="race-checkpoint" class="stat-value">1 <span class="stat-total">/ 10</span></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
