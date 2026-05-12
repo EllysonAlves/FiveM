@@ -586,33 +586,3 @@ CreateThread(function()
         end
     end
 end)
-
--- ==================== SPEEDOMETER ====================
-CreateThread(function()
-    while true do
-        local waitTime = 500
-        local ped = PlayerPedId()
-        local veh = GetVehiclePedIsIn(ped, false)
-
-        if veh ~= 0 and DoesEntityExist(veh) and GetPedInVehicleSeat(veh, -1) == ped then
-            waitTime = 150
-            local speed = GetEntitySpeed(veh) * 3.6
-            local gear = GetVehicleCurrentGear(veh)
-            local fuel = GetVehicleFuelLevel(veh)
-
-            SendNUIMessage({
-                action = 'updateSpeedometer',
-                data = {
-                    show = true,
-                    speed = speed,
-                    gear = gear,
-                    fuel = fuel
-                }
-            })
-        else
-            SendNUIMessage({ action = 'updateSpeedometer', data = { show = false } })
-        end
-
-        Wait(waitTime)
-    end
-end)

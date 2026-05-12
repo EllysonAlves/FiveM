@@ -48,7 +48,6 @@ window.addEventListener('message', function(event) {
         case 'showScoreboard': displayScoreboard(data.data || {}); break;
         case 'showRanking': displayRanking(data.data || {}); break;
         case 'showProfile': displayProfile(data.data || {}); break;
-        case 'updateSpeedometer': updateSpeedometer(data.data || {}); break;
     }
 });
 
@@ -271,19 +270,6 @@ function displayProfile(data) {
         <div class="stat-row"><span class="stat-label">TAXA DE VITÓRIA</span><span class="stat-value">${winRate}%</span></div>
         <div class="stat-row"><span class="stat-label">MELHOR TEMPO</span><span class="stat-value">${bestTimeFormatted}</span></div>`);
     removeClass('#modal-profile', 'hidden');
-}
-
-function updateSpeedometer(data) {
-    const speedometer = $('#speedometer');
-    if (!speedometer) return;
-    if (!data.show) {
-        speedometer.classList.add('hidden');
-        return;
-    }
-    speedometer.classList.remove('hidden');
-    setText('#speed-value', Math.max(0, Math.floor(data.speed || 0)));
-    setText('#speed-gear', data.gear && data.gear > 0 ? `M${data.gear}` : 'N');
-    setText('#speed-fuel', `${Math.floor(data.fuel ?? 100)}%`);
 }
 
 function closeModal() {
