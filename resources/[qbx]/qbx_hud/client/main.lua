@@ -604,10 +604,12 @@ end
 CreateThread(function()
     local wasInVehicle = false
     while true do
-        if sharedConfig.menu.isChangeFPSChecked then
+        if cache.vehicle and not IsThisModelABicycle(cache.vehicle) then
+            Wait(16) -- smooth vehicle HUD (~60fps)
+        elseif sharedConfig.menu.isChangeFPSChecked then
             Wait(500)
         else
-            Wait(50)
+            Wait(100)
         end
         if LocalPlayer.state.isLoggedIn then
             local show = true

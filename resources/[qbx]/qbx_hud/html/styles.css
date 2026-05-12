@@ -747,3 +747,66 @@ speed:after{
     radial-gradient(circle at center, rgba(8,9,15,.34) 0 48%, transparent 49%),
     conic-gradient(from 225deg, #c084fc 0 var(--rpm, 0%), rgba(255,255,255,.20) var(--rpm, 0%) 72%, transparent 72% 100%) !important;
 }
+
+
+/* ==================== ALVES RACING RPM FEEL V5 ==================== */
+.alves-speed-card{
+  animation:none;
+}
+
+.alves-speed-card.warning{
+  filter:drop-shadow(0 0 13px rgba(251,191,36,.24));
+}
+
+.alves-speed-card.redline{
+  animation:alvesRedlineShake .085s infinite linear;
+  filter:drop-shadow(0 0 18px rgba(239,68,68,.36));
+}
+
+.alves-gauge-shell{
+  --rpm-color:#a855f7;
+  width:136px !important;
+  height:136px !important;
+  background:
+    radial-gradient(circle at center, rgba(8,9,15,.18) 0 48%, transparent 49%),
+    conic-gradient(from 225deg, var(--rpm-color) 0 calc((var(--rpm, 0%) / 100) * 270deg), rgba(255,255,255,.16) 0 270deg, transparent 270deg 360deg) !important;
+  border-radius:50%;
+  position:relative;
+  overflow:hidden;
+}
+
+.alves-gauge-shell.normal{ --rpm-color:#a855f7; }
+.alves-gauge-shell.warning{ --rpm-color:#fbbf24; }
+.alves-gauge-shell.redline{ --rpm-color:#ef4444; }
+
+.alves-gauge-shell::before{
+  background:radial-gradient(circle, rgba(9,10,18,.34), rgba(9,10,18,.12)) !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+}
+
+.alves-gauge-shell::after{
+  border-color:rgba(255,255,255,.10) !important;
+  box-shadow:inset 0 0 20px rgba(255,255,255,.035);
+}
+
+.alves-speed-card.warning .alves-speed-unit,
+.alves-speed-card.warning .alves-speed-pill strong{
+  color:#fbbf24 !important;
+}
+
+.alves-speed-card.redline .alves-speed-unit,
+.alves-speed-card.redline .alves-speed-pill strong{
+  color:#ef4444 !important;
+}
+
+.alves-speed-card.redline .alves-speed-value{
+  text-shadow:0 0 18px rgba(239,68,68,.7), 0 2px 7px rgba(0,0,0,.9) !important;
+}
+
+@keyframes alvesRedlineShake{
+  0%{ transform:translate(0,0) rotate(0deg); }
+  25%{ transform:translate(1px,-1px) rotate(-.35deg); }
+  50%{ transform:translate(-1px,1px) rotate(.35deg); }
+  75%{ transform:translate(1px,1px) rotate(-.2deg); }
+  100%{ transform:translate(0,0) rotate(0deg); }
+}

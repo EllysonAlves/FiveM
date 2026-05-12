@@ -973,13 +973,20 @@ const vehHud = {
       }
     });
   },
+  computed: {
+    rpmLevel() {
+      if (this.rpm >= 88) return 'redline';
+      if (this.rpm >= 70) return 'warning';
+      return 'normal';
+    },
+  },
   methods: {
     vehicleHud(data) {
       this.show = data.show;
       this.speed = data.speed;
       this.altitude = data.altitude;
       this.fuel = data.fuel;
-      this.rpm = Math.round((data.rpm || 0) * 100);
+      this.rpm = Math.max(0, Math.min(100, Math.round((data.rpm || 0) * 100)));
       this.showSeatbelt = data.showSeatbelt;
       this.showAltitude = data.showAltitude;
       this.showSquareB = data.showSquareB;
