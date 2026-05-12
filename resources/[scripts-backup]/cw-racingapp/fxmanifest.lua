@@ -1,0 +1,67 @@
+-- Resource Metadata
+fx_version 'cerulean'
+games { 'gta5' }
+
+author 'Coffeelot & Wuggie'
+description 'CW Racing App'
+version '6.2.10'
+
+ui_page {
+    "web/dist/index.html"  -- UI original para HUD da corrida
+}
+
+shared_scripts {
+    '@ox_lib/init.lua',
+    'locales/*.lua',
+    'shared/config.lua',
+    'shared/drift.lua',
+    'shared/elo.lua',
+    'shared/head2head.lua',
+    'shared/bounties.lua',
+    'shared/autoHost.lua',
+    'shared/itemPayouts.lua',
+    '@qbx_core/modules/playerdata.lua', -- remove this if you don't use qbox
+}
+
+client_scripts {
+    'bridge/client/*.lua',
+    'client/classes.lua',
+    'client/globals.lua',
+    'client/functions.lua',
+    'client/main.lua',
+    'client/gui.lua',
+    'client/head2head.lua',
+    'client/drift.lua',
+    'client/driftchallenge.lua',
+}
+
+server_scripts {
+    '@oxmysql/lib/MySQL.lua',
+    'server/debug.lua',
+    'server/database.lua',
+    'server/databaseTimes.lua',
+    'bridge/server/*.lua',
+    'server/functions.lua',
+    'server/bounties.lua',
+    'server/main.lua',
+    'server/crypto.lua',
+    'server/crews.lua',
+    'server/elo.lua',
+    'server/head2head.lua',
+    'server/drift.lua',
+    'server/driftchallenge.lua',
+}
+
+files {
+    "html/index.html",
+    "html/style.css",
+    "html/script.js",
+    "web/dist/index.html",
+    "web/dist/assets/*.*",
+}
+
+dependencies {
+    'cw-performance'
+}
+
+lua54 'yes'

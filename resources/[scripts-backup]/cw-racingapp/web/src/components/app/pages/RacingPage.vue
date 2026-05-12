@@ -1,0 +1,305 @@
+<template>
+    <Tabs v-model="tab" class="flex-1" @update:model-value="fetchRelevantData">
+    <div class="tab-bar flex items-center justify-between">
+        <TabsList>
+          <TabsTrigger @click="setTab('current')" value="current">{{ translate('available_races') }}</TabsTrigger>
+          <TabsTrigger @click="setTab('map')" value="map" v-if="!globalStore.baseData.data.hideMap">{{ translate('racing_map') }}</TabsTrigger>
+          <TabsTrigger @click="setTab('bounties')" value="bounties">{{ translate('bounties') }}</TabsTrigger>
+          <TabsTrigger @click="setTab('setup')" value="setup" v-if="globalStore.baseData.data.auth.setup">{{ translate('setup') }}</TabsTrigger>
+        </TabsList>
+      <div class="flex items-center gap-2">
+        <DriftInviteMenu v-if="globalStore.baseData.data.driftingIsEnabled" />
+        <Head2HeadInviteMenu v-if="globalStore.baseData.data.showH2H" />
+      </div>
+    </div>
+    <Transition name="quick-slide" mode="out-in">
+      <TabsContent value="current" v-if="tab === 'current'" class="overflow-auto">
+        <InfoHeader
+          :title="translate('racing')"
+          :subtitle="translate('racing_desc')">
+          <Badge color="primary" variant="outline">
+            <UserIcon />
+            <div class="flex items-center gap-2">
+              {{ globalStore.baseData?.data?.currentRacerName }}
+              <span v-if="globalStore.baseData?.data?.currentCrewName">
+                [{{ globalStore.baseData.data.currentCrewName }}]
+              </span>
+            </div>
+          </Badge>
+          <Badge v-if="globalStore.baseData?.data?.currentRacerAuth" variant="outline">
+            <UserSpecificIcon />
+            {{ translate("auth_type_" + globalStore.baseData?.data?.currentRacerAuth) }}
+          </Badge>
+          <Badge
+            v-if="globalStore.baseData?.data?.currentVehicle?.model && globalStore.baseData?.data?.currentVehicle?.class"
+            variant="outline"
+            color="primary"
+          >
+            <CarIcon /> {{ translate('you_are_in_a_vehicle') }}
+            {{ globalStore.baseData?.data?.currentVehicle?.model }}
+            [{{ globalStore.baseData?.data?.currentVehicle?.class }}]
+          </Badge>
+        </InfoHeader>
+        <div class="current-race-container">
+          <div id="current-race-selection" v-if="currentRace">
+            <h2 class="mb-1">{{ translate('active') }}</h2>
+            <CurrentRaceCard
+              :race="currentRace"
+              @leave="leaveRace"
+              @start="startRace"
+              @cancel="cancelRace"
+            />
+          </div>
+        </div>
+        <div v-if="racesToDisplay.length > 0" class="mt-2">
+          <h2 class="mb-1">{{ translate('available_races') }}</h2>
+          <div v-if="isLoading" class="circular-loading-container flex justify-center items-center">
+            <span class="loader"></span>
+          </div>
+          <div v-else-if="racesToDisplay.length > 0" class="available-races pagecontent">
+            <AvailableRacesCard
+              v-for="race in racesToDisplay"
+              :key="race.RaceId"
+              :race="race"
+            />
+          </div> 
+        </div>
+        <InfoText
+          v-if="races.length === 0"
+          class="no-races-text"
+          :title="translate('no_races')"
+          :text="translate('no_races_subtitle')"
+        />
+      </TabsContent>
+
+      <TabsContent value="map" v-else-if="tab === 'map'" >
+        <RacingMapTab />
+      </TabsContent>
+
+      <TabsContent value="bounties" v-else-if="tab === 'bounties'" >
+        <BountiesTab />
+      </TabsContent>
+
+      <TabsContent value="setup" v-else-if="tab === 'setup'" >
+        <div class="subheader flex items-center gap-2">
+          <h3 class="header-text">{{ translate('pick_track') }}</h3>
+          <Label for="show-curated">
+              {{ translate('curated_only') }}
+          </Label>
+          <Switch
+            id="show-curated"
+            :model-value="globalStore.showOnlyCurated"
+            class="mr-1"
+            @update:model-value="toggleCurated"
+          >
+          </Switch>
+          <Input
+            class="text-field w-64"
+            :placeholder="translate('search_dot')"
+            v-model="search"
+          />
+        </div>
+        <div v-if="isLoading" class="loading-container flex justify-center items-center" id="available-races-loader">
+          <span class="loader"></span>
+        </div>
+        <div v-else class="pagecontent available-tracks">
+          <AvailableTracksCard
+            v-for="track in filteredTracks"
+            :key="track.TrackId"
+            :track="track"
+            @select="selectTrack"
+          />
+        </div>
+      </TabsContent>
+    </Transition>
+    </Tabs>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, Ref } from "vue";
+import api from "@/api/axios";
+import { useGlobalStore } from "@/store/global";
+import AvailableRacesCard from "../items/AvailableRacesCard.vue";
+import AvailableTracksCard from "../items/AvailableTracksCard.vue";
+import CurrentRaceCard from "../items/CurrentRaceCard.vue";
+import InfoText from "../components/InfoText.vue";
+import { translate } from "@/helpers/translate";
+import BountiesTab from "../components/BountiesTab.vue";
+import RacingMapTab from "../components/RacingMapTab.vue";
+import Head2HeadInviteMenu from "../components/h2h/Head2HeadInviteMenu.vue";
+import { CurrentRace, Race, Track } from "@/store/types";
+import { closeApp } from "@/helpers/closeApp";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { fakeRaces } from "@/mocking/testState";
+import Label from "@/components/ui/label/Label.vue";
+import { Input } from "@/components/ui/input";
+import InfoHeader from "../components/InfoHeader.vue";
+import Badge from "@/components/ui/badge/Badge.vue";
+import { CarIcon, UserIcon } from "lucide-vue-next";
+import UserSpecificIcon from "../components/UserSpecificIcon.vue";
+import DriftInviteMenu from "../components/drift/DriftInviteMenu.vue";
+
+const globalStore = useGlobalStore();
+const tab = ref(globalStore.currentTab.racing);
+const isLoading = ref(false);
+const races = ref<Race[]>([]);
+const dialog = ref(false);
+const search = ref("");
+const selectedTrack: Ref<Track | undefined> = ref(undefined);
+const currentRace: Ref<CurrentRace | undefined> = ref(undefined);
+
+const filteredTracks = computed(() => {
+  let tracks = globalStore.tracks;
+  if (globalStore.showOnlyCurated)
+    tracks = tracks?.filter((track: Track) => !!track.Curated);
+  if (tracks && search.value !== "")
+    tracks = tracks.filter(
+      (track) =>
+        track.RaceName?.toLowerCase().includes(search.value.toLowerCase()) ||
+        track.TrackId?.toLowerCase().includes(search.value.toLowerCase()) ||
+        track.CreatorName?.toLocaleLowerCase().includes(search.value.toLowerCase())
+    );
+
+  return tracks.sort((a: Track, b: Track) =>
+    a.RaceName.toLowerCase() > b.RaceName.toLowerCase() ? 1 : -1
+  );
+});
+
+const racesToDisplay = computed(() => races.value.filter((race: Race) => !race.Started && !race.Hidden))
+
+const getListedRaces = async () => {
+  if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+    console.log('MOCK DATA ACTIVE. SKIPPING FETCH')
+
+    const mapped = fakeRaces.map((race) => ({...race, ExpirationTime: Date.now()}))
+    races.value = mapped
+    return
+  }
+  isLoading.value = true;
+  const res = await api.post("UiGetListedRaces");
+  races.value = res.data ;
+  isLoading.value = false;
+};
+
+const selectTrack = (track: Track) => {
+  dialog.value = true;
+  selectedTrack.value = track;
+};
+
+const getTracks = async () => {
+  if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+    console.log('MOCK DATA ACTIVE. SKIPPING FETCH')
+    return
+  }
+  isLoading.value = true;
+  const res = await api.post("UiGetAvailableTracks");
+  globalStore.$state.tracks = res.data;
+  isLoading.value = false;
+};
+
+const getCurrent = async () => {
+  if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+    console.log('MOCK DATA ACTIVE. SKIPPING FETCH')
+    return
+  }
+  const res = await api.post("UiFetchCurrentRace");
+  if (res.data.raceId) {
+    currentRace.value = res.data;
+  } else {
+    currentRace.value = undefined
+  }
+};
+
+const leaveRace = async () => {
+  if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+    console.log('MOCK DATA ACTIVE. SKIPPING POST')
+    return
+  }
+  if (currentRace?.value?.raceId) {
+    await api.post(
+      "UiLeaveCurrentRace",
+      JSON.stringify(currentRace.value.raceId)
+    );
+    currentRace.value = undefined;
+  }
+};
+
+const startRace = async () => {
+  if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+    console.log('MOCK DATA ACTIVE. SKIPPING FETCH')
+    return
+  }
+  if (currentRace?.value?.raceId) {
+    await api.post(
+      "UiStartCurrentRace",
+      JSON.stringify(currentRace.value.raceId)
+    );
+    currentRace.value = undefined;
+    closeApp();
+  }
+};
+
+const fetchRelevantData = () => {
+  if (tab.value === "current"){ 
+    getListedRaces();
+    getCurrent();
+  }
+  else if (tab.value === "setup") getTracks();
+};
+
+const toggleCurated = () => {
+  globalStore.$state.showOnlyCurated = !globalStore.$state.showOnlyCurated;
+  fetchRelevantData();
+};
+
+const cancelRace = ()  => {
+  getCurrent();
+  getListedRaces();
+}
+
+const setTab = (newTab: string) => {
+  globalStore.currentTab.racing = newTab;
+};
+
+
+onMounted(() => {
+  fetchRelevantData();
+  selectedTrack.value = undefined;
+});
+</script>
+
+<style scoped>
+.tab-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-right: 0.4em;
+}
+.available-races {
+  display: flex;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  gap: 1em;
+  width: fit-content;
+}
+
+.available-tracks {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  gap: 1em;
+  margin-top: 1em;
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+}
+
+.no-races-text {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+}
+</style>

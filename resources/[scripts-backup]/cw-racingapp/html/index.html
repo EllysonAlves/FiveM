@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Racing Tablet</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="tablet" class="tablet hidden">
+        <div class="tablet-container">
+            <!-- Header -->
+            <div class="tablet-header">
+                <div class="header-left">
+                    <div class="signal-icon">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span class="time" id="current-time">12:00</span>
+                </div>
+                <div class="header-center">
+                    <h1>🏁 Racing System</h1>
+                </div>
+                <div class="header-right">
+                    <button class="close-btn" onclick="closeTablet()">✕</button>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="tablet-nav">
+                <button class="nav-btn active" data-page="home" onclick="switchPage('home')">
+                    <span class="icon">🏠</span>
+                    <span>Inicio</span>
+                </button>
+                <button class="nav-btn" data-page="race" onclick="switchPage('race')">
+                    <span class="icon">🏁</span>
+                    <span>Corrida</span>
+                </button>
+                <button class="nav-btn" data-page="scoreboard" onclick="switchPage('scoreboard')">
+                    <span class="icon">📊</span>
+                    <span>Scoreboard</span>
+                </button>
+                <button class="nav-btn" data-page="ranking" onclick="switchPage('ranking')">
+                    <span class="icon">🏆</span>
+                    <span>Ranking</span>
+                </button>
+                <button class="nav-btn" data-page="profile" onclick="switchPage('profile')">
+                    <span class="icon">👤</span>
+                    <span>Perfil</span>
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="tablet-content">
+                <!-- Home Page -->
+                <div class="page active" id="page-home">
+                    <div class="welcome-section">
+                        <h2>Bem-vindo, <span id="player-name">Corredor</span></h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">🏆</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Divisão</span>
+                                    <span class="stat-value" id="home-division">Bronze</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">📈</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">ELO</span>
+                                    <span class="stat-value" id="home-elo">1000</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">🏁</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Corridas</span>
+                                    <span class="stat-value" id="home-races">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">🥇</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Vitórias</span>
+                                    <span class="stat-value" id="home-wins">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="quick-actions">
+                            <button class="action-btn primary" onclick="startQuickRace('ranked')">
+                                <span class="icon">🏁</span>
+                                <span>Corrida Ranked</span>
+                            </button>
+                            <button class="action-btn secondary" onclick="startQuickRace('unranked')">
+                                <span class="icon">🚗</span>
+                                <span>Corrida Casual</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Race Page -->
+                <div class="page" id="page-race">
+                    <div class="race-section">
+                        <h2>Iniciar Corrida</h2>
+                        <div class="race-type-selector">
+                            <button class="race-type-btn active" data-type="ranked" onclick="selectRaceType('ranked')">
+                                <div class="race-type-icon">🏆</div>
+                                <div class="race-type-info">
+                                    <h3>Ranked</h3>
+                                    <p>Ganhe ou perca pontos ELO</p>
+                                </div>
+                            </button>
+                            <button class="race-type-btn" data-type="unranked" onclick="selectRaceType('unranked')">
+                                <div class="race-type-icon">🚗</div>
+                                <div class="race-type-info">
+                                    <h3>Casual</h3>
+                                    <p>Corra sem afetar seu ELO</p>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="race-info">
+                            <div class="info-item">
+                                <span class="label">Classe de Veículo:</span>
+                                <span class="value">Classe S (Super Carros)</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Pista:</span>
+                                <span class="value">Aleatória</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Veículo:</span>
+                                <span class="value">Aleatório</span>
+                            </div>
+                        </div>
+                        <button class="start-race-btn" onclick="confirmStartRace()">
+                            <span class="icon">🏁</span>
+                            <span>Iniciar Corrida</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scoreboard Page -->
+                <div class="page" id="page-scoreboard">
+                    <div class="scoreboard-section">
+                        <h2>Últimas Corridas</h2>
+                        <div class="scoreboard-list" id="scoreboard-list">
+                            <div class="loading">Carregando...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ranking Page -->
+                <div class="page" id="page-ranking">
+                    <div class="ranking-section">
+                        <h2>Ranking Global</h2>
+                        <div class="ranking-list" id="ranking-list">
+                            <div class="loading">Carregando...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Page -->
+                <div class="page" id="page-profile">
+                    <div class="profile-section">
+                        <div class="profile-header">
+                            <div class="profile-avatar">👤</div>
+                            <div class="profile-info">
+                                <h2 id="profile-name">Nome do Corredor</h2>
+                                <p id="profile-id">ID: RC-XXXXXX</p>
+                            </div>
+                        </div>
+                        <div class="profile-stats">
+                            <div class="profile-stat-card">
+                                <h3>Divisão Atual</h3>
+                                <div class="division-display">
+                                    <span class="division-icon" id="profile-division-icon">🥉</span>
+                                    <span class="division-name" id="profile-division">Bronze</span>
+                                </div>
+                                <div class="elo-bar">
+                                    <div class="elo-progress" id="elo-progress" style="width: 0%"></div>
+                                </div>
+                                <p class="elo-info">
+                                    <span id="profile-elo">0</span> ELO
+                                    <span class="elo-next">Próxima: <span id="profile-next-elo">1000</span></span>
+                                </p>
+                            </div>
+                            <div class="profile-stat-grid">
+                                <div class="profile-stat-item">
+                                    <span class="stat-icon">🏁</span>
+                                    <span class="stat-label">Total de Corridas</span>
+                                    <span class="stat-value" id="profile-races">0</span>
+                                </div>
+                                <div class="profile-stat-item">
+                                    <span class="stat-icon">🥇</span>
+                                    <span class="stat-label">Vitórias</span>
+                                    <span class="stat-value" id="profile-wins">0</span>
+                                </div>
+                                <div class="profile-stat-item">
+                                    <span class="stat-icon">📊</span>
+                                    <span class="stat-label">Taxa de Vitória</span>
+                                    <span class="stat-value" id="profile-winrate">0%</span>
+                                </div>
+                                <div class="profile-stat-item">
+                                    <span class="stat-icon">🎯</span>
+                                    <span class="stat-label">Melhor Posição</span>
+                                    <span class="stat-value" id="profile-best-pos">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
