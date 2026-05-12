@@ -129,6 +129,39 @@ local function getOrCreateRacer(src)
     end
 end
 
+
+local function getRacerRecordByCitizenId(citizenId)
+    local rows = MySQL.query.await('SELECT racerid, racername, ranking, races, wins, elo_points, elo_tier FROM racer_names WHERE citizenid = ? AND active = 1 LIMIT 1', {citizenId})
+    return rows and rows[1] or nil
+end
+
+local function getAutoLaps(distance)
+    distance = tonumber(distance) or 0
+    local rules = Config.LapsByDistance or {}
+    for _, rule in ipairs(rules) do
+        if distance >= (rule.minDistance or 0) then
+            return rule.laps or 0
+        end
+    end
+    return 0
+end
+
+local function getTrackByName(trackName)
+    if not trackName then return nil end
+    for _, t in pairs(Tracks) do
+        if t.name == trackName then return t end
+    end
+    return nil
+end
+
+local function getBestTimesForTrack(trackId)
+    if not trackId then return {} end
+    return MySQL.query.await(
+        'SELECT racerName, time, vehicleModel as car, FROM_UNIXTIME(timestamp) as date FROM track_times WHERE trackId = ? ORDER BY time ASC LIMIT 10',
+        {trackId}
+    ) or {}
+end
+
 -- ==================== SISTEMA DE ELO ====================
 local function getTierByPoints(eloPoints)
     for _, tier in ipairs(ELO_TIERS) do
@@ -270,21 +303,28 @@ lib.callback.register('alves-racingapp:getPlayerInfo', function(src)
         }
     end
     
-    -- Buscar estatísticas
-    local stats = MySQL.query.await([[
-        SELECT 
-            COUNT(*) as total_races,
-            SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) as wins,
-            SUM(time) / 1000 as total_time_seconds,
-            MIN(time) as best_lap
-        FROM track_times
-        WHERE citizenid = ?
-    ]], {citizenId})
-    
-    local totalRaces = (stats and stats[1]) and stats[1].total_races or 0
-    local wins = (stats and stats[1]) and stats[1].wins or 0
-    local totalTime = (stats and stats[1]) and stats[1].total_time_seconds or 0
-    local bestLap = (stats and stats[1]) and stats[1].best_lap or 0
+    local racerRecord = getRacerRecordByCitizenId(citizenId)
+    local totalRaces = racerRecord and (racerRecord.races or 0) or 0
+    local wins = racerRecord and (racerRecord.wins or 0) or 0
+    local totalTime = 0
+    local bestLap = 0
+
+    if racerRecord and racerRecord.racerid then
+        local stats = MySQL.query.await([[
+            SELECT 
+                COUNT(*) as total_races,
+                SUM(time) / 1000 as total_time_seconds,
+                MIN(time) as best_lap
+            FROM track_times
+            WHERE racerid = ?
+        ]], {racerRecord.racerid})
+
+        if stats and stats[1] then
+            totalTime = stats[1].total_time_seconds or 0
+            bestLap = stats[1].best_lap or 0
+            if totalRaces == 0 then totalRaces = stats[1].total_races or 0 end
+        end
+    end
     
     -- Calcular nível baseado em pontos ELO (cada 50 pontos = 1 nível)
     local eloPoints = racerData[1].elo_points or 0
@@ -324,42 +364,35 @@ end)
 print('[Alves Racing] ✅ Callback getMyElo registrado')
 
 lib.callback.register('alves-racingapp:getScoreboard', function(src, trackName)
-    print(string.format('[Alves Racing] getScoreboard chamado para pista: %s', trackName or 'nil'))
-    
-    if not trackName or trackName == '' then 
-        print('[Alves Racing] ERRO: trackName vazio')
-        return {} 
-    end
-    
-    -- Buscar track ID
-    local track = nil
-    for _, t in pairs(Tracks) do
-        if t.name == trackName then
-            track = t
-            break
+    print(string.format('[Alves Racing] getScoreboard chamado para pista: %s', trackName or 'geral'))
+
+    if trackName and trackName ~= '' then
+        local track = getTrackByName(trackName)
+        if not track then
+            print(string.format('[Alves Racing] ERRO: Pista não encontrada: %s', trackName))
+            return {}
         end
+        return getBestTimesForTrack(track.raceid)
     end
-    
-    if not track then 
-        print(string.format('[Alves Racing] ERRO: Pista não encontrada: %s', trackName))
-        return {} 
+
+    -- Sem pista selecionada: retorna os melhores tempos globais. Assim o botão Scoreboard funciona no dashboard.
+    return MySQL.query.await(
+        'SELECT racerName, time, vehicleModel as car, trackId, FROM_UNIXTIME(timestamp) as date FROM track_times ORDER BY time ASC LIMIT 20',
+        {}
+    ) or {}
+end)
+
+lib.callback.register('alves-racingapp:getTracks', function(src)
+    local tracks = {}
+    for _, track in pairs(Tracks) do
+        tracks[#tracks + 1] = {
+            id = track.raceid,
+            name = track.name,
+            distance = track.distance or 0
+        }
     end
-    
-    print(string.format('[Alves Racing] Buscando tempos para trackId: %s', track.raceid))
-    
-    -- Buscar top 10 tempos da pista
-    local times = MySQL.query.await(
-        'SELECT racerName, time, vehicleModel as car, FROM_UNIXTIME(timestamp) as date FROM track_times WHERE trackId = ? ORDER BY time ASC LIMIT 10',
-        {track.raceid}
-    )
-    
-    if times then
-        print(string.format('[Alves Racing] Scoreboard: %d tempos encontrados', #times))
-    else
-        print('[Alves Racing] ERRO: Nenhum tempo encontrado')
-    end
-    
-    return times or {}
+    table.sort(tracks, function(a, b) return tostring(a.name) < tostring(b.name) end)
+    return tracks
 end)
 
 lib.callback.register('alves-racingapp:getMyProfile', function(src)
@@ -503,12 +536,7 @@ lib.callback.register('alves-racingapp:server:startQuickRace', function(src, rac
     local vehicle = QuickRaceVehicles[math.random(1, #QuickRaceVehicles)]
     
     -- Determinar voltas baseado na distância
-    local laps = 0  -- Sprint por padrão
-    if track.distance >= 15000 then
-        laps = 3
-    elseif track.distance >= 8000 then
-        laps = 2
-    end
+    local laps = getAutoLaps(track.distance)
     
     -- Criar ID de corrida
     local raceId = 'quick_' .. src .. '_' .. os.time()
@@ -543,7 +571,8 @@ lib.callback.register('alves-racingapp:server:startQuickRace', function(src, rac
         laps = laps,
         racerId = src,
         racerName = racer,
-        startTime = os.time()
+        startTime = os.time(),
+        totalRacers = Config.DefaultTotalRacers or 1
     }
     
     print(('[Alves Racing] Quick race iniciada: %s - %s (%s)'):format(racer, track.name, raceType))
@@ -554,7 +583,8 @@ lib.callback.register('alves-racingapp:server:startQuickRace', function(src, rac
         vehicleModel = vehicle,
         startCoords = checkpoints[1].coords,
         laps = laps,
-        checkpoints = checkpoints
+        checkpoints = checkpoints,
+        totalRacers = Config.DefaultTotalRacers or 1
     }
 end)
 
@@ -563,6 +593,7 @@ print('[Alves Racing] ✅ Todos os callbacks registrados com sucesso!')
 -- ==================== EVENTOS ====================
 RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
     local src = source
+    data = data or {}
     print(string.format('[Alves Racing] Recebendo finish race de source %d', src))
     print(string.format('[Alves Racing] Dados: %s', json.encode(data)))
     
@@ -570,6 +601,23 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
     if not citizenId then 
         print('[Alves Racing] ERRO: citizenId não encontrado')
         return 
+    end
+
+    local race = data.raceId and activeRaces[data.raceId] or nil
+    if not race or race.racerId ~= src then
+        print(('[Alves Racing] ERRO: finishRace rejeitado. Corrida ativa inválida para source %d'):format(src))
+        return
+    end
+
+    local totalTime = tonumber(data.totalTime) or 0
+    if totalTime < (Config.MinRaceTimeMs or 15000) or totalTime > (Config.MaxRaceTimeMs or 3600000) then
+        print(('[Alves Racing] ERRO: tempo suspeito rejeitado (%dms) para source %d'):format(totalTime, src))
+        return
+    end
+
+    if data.raceName ~= race.trackName then
+        print(('[Alves Racing] ERRO: nome de pista divergente. client=%s server=%s'):format(tostring(data.raceName), tostring(race.trackName)))
+        return
     end
     
     print(string.format('[Alves Racing] citizenId: %s', citizenId))
@@ -599,7 +647,7 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
     end
     
     -- Salvar tempo na tabela track_times (estrutura real do banco)
-    print(string.format('[Alves Racing] Salvando tempo no banco: trackId=%s, racer=%s, time=%d', track.raceid, racerName, data.totalTime))
+    print(string.format('[Alves Racing] Salvando tempo no banco: trackId=%s, racer=%s, time=%d', track.raceid, racerName, totalTime))
     
     -- Buscar racerid
     local racerData = MySQL.query.await('SELECT racerid FROM racer_names WHERE citizenid = ? AND active = 1', {citizenId})
@@ -607,11 +655,11 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
     
     local success = MySQL.insert.await(
         'INSERT INTO track_times (trackId, racerName, racerid, carClass, vehicleModel, raceType, time, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        {track.raceid, racerName, racerid, 'S', data.vehicle or 'Unknown', data.raceType or 'Circuit', data.totalTime, os.time()}
+        {track.raceid, racerName, racerid, 'S', data.vehicle or 'Unknown', race.raceType or data.raceType or 'casual', totalTime, os.time()}
     )
     
     if success then
-        print(('[Alves Racing] ✅ Tempo salvo: %s - %s - %dms'):format(racerName, track.name, data.totalTime))
+        print(('[Alves Racing] ✅ Tempo salvo: %s - %s - %dms'):format(racerName, track.name, totalTime))
     else
         print('[Alves Racing] ❌ ERRO ao salvar tempo no banco')
     end
@@ -620,10 +668,10 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
     MySQL.update.await('UPDATE racer_names SET races = races + 1 WHERE citizenid = ? AND active = 1', {citizenId})
     
     -- Calcular e aplicar pontos ELO (apenas para corridas rankeadas)
-    if data.raceType == 'ranked' then
+    if race.raceType == 'ranked' then
         -- Sistema simplificado: cada corrida completada ganha pontos
         -- Futuramente expandir para sistema multiplayer com posições
-        local eloGain = 20 -- Pontos fixos por corrida rankeada completada
+        local eloGain = Config.RankedCompletionElo or 20 -- Pontos fixos por corrida rankeada completada
         
         local newPoints, newTier = updateRacerElo(citizenId, eloGain, 'ranked')
         
@@ -637,6 +685,8 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
         
         print(string.format('[Alves Racing] ✅ ELO atualizado: %s ganhou %d pontos', racerName, eloGain))
     end
+
+    activeRaces[data.raceId] = nil
 end)
 
 RegisterNetEvent('alves-racingapp:server:leaveRace', function()

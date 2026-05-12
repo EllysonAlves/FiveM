@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap');
 
 *{
     margin:0;
@@ -381,7 +380,8 @@ body::after{
             rgba(8,10,18,.62),
             rgba(8,10,18,.15)
         ),
-        url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop') center/cover;
+        radial-gradient(circle at 82% 20%, rgba(168,85,247,.36), transparent 32%),
+        linear-gradient(135deg, rgba(76,29,149,.55), rgba(8,10,18,.95));
 }
 
 .banner-overlay{
@@ -1118,4 +1118,72 @@ body::after{
     .profile-stats{
         grid-template-columns:1fr;
     }
+}
+
+/* ==================== ALVES RACING - SPEEDOMETER ==================== */
+.speedometer {
+    position: fixed;
+    right: 38px;
+    bottom: 42px;
+    width: 148px;
+    height: 148px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    pointer-events: none;
+    color: #fff;
+    font-family: 'Rajdhani', Arial, sans-serif;
+}
+
+.speedometer.hidden { display: none; }
+
+.speed-ring {
+    width: 126px;
+    height: 126px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at center, rgba(8, 7, 18, 0.92) 0%, rgba(8, 7, 18, 0.86) 58%, transparent 59%),
+        conic-gradient(from 225deg, #8b5cf6 0deg, #a855f7 190deg, rgba(255,255,255,0.12) 191deg 270deg, transparent 271deg);
+    border: 1px solid rgba(168, 85, 247, 0.55);
+    box-shadow: 0 0 32px rgba(139, 92, 246, 0.35), inset 0 0 24px rgba(139, 92, 246, 0.16);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.speed-value {
+    font-size: 46px;
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: -1px;
+    text-shadow: 0 0 16px rgba(168, 85, 247, 0.75);
+}
+
+.speed-unit {
+    margin-top: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.68);
+    letter-spacing: 2px;
+}
+
+.speed-meta {
+    margin-top: -12px;
+    display: flex;
+    gap: 8px;
+}
+
+.speed-meta span {
+    min-width: 42px;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(8, 7, 18, 0.88);
+    border: 1px solid rgba(168, 85, 247, 0.36);
+    color: rgba(255,255,255,0.78);
+    font-size: 13px;
+    font-weight: 700;
 }

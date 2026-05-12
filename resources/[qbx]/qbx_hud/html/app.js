@@ -867,9 +867,9 @@ const playerHud = {
       if (data.engine <= 45) {
         this.engineColor = "#ff0000";
       } else if (data.engine <= 75 && data.engine >= 46 ) {
-        this.engineColor = "#dd6e14";
+        this.engineColor = "#fbbf24";
       } else if(data.engine<=100) {
-        this.engineColor = "#3FA554";
+        this.engineColor = "#8b5cf6";
       } 
 
       if (data.dynamicNitro == true) {
@@ -1002,9 +1002,9 @@ const vehHud = {
       if (data.fuel <= 20) {
         this.fuelColor = "#ff0000";
       } else if (data.fuel <= 30) {
-        this.fuelColor = "#dd6e14";
+        this.fuelColor = "#fbbf24";
       } else {
-        this.fuelColor = "#FFFFFF";
+        this.fuelColor = "#a855f7";
       }
       if (data.showSquareB === true) {
         this.showSquare = true;

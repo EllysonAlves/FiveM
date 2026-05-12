@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alves Racing</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <!-- TABLET -->
@@ -26,7 +24,7 @@
                         <i class="fas fa-th-large"></i>
                         <span>DASHBOARD</span>
                     </div>
-                    <div class="menu-item">
+                    <div class="menu-item" onclick="showDashboard()">
                         <i class="fas fa-flag-checkered"></i>
                         <span>CORRIDAS</span>
                     </div>
@@ -34,15 +32,15 @@
                         <i class="fas fa-trophy"></i>
                         <span>RANKING</span>
                     </div>
-                    <div class="menu-item">
+                    <div class="menu-item" onclick="showComingSoon('Garagem')">
                         <i class="fas fa-warehouse"></i>
                         <span>GARAGEM</span>
                     </div>
-                    <div class="menu-item">
+                    <div class="menu-item" onclick="showProfile()">
                         <i class="fas fa-user"></i>
                         <span>PERFIL</span>
                     </div>
-                    <div class="menu-item">
+                    <div class="menu-item" onclick="showComingSoon('Configurações')">
                         <i class="fas fa-cog"></i>
                         <span>CONFIGURAÇÕES</span>
                     </div>
@@ -279,6 +277,18 @@
                 <span class="stat-label">CHECKPOINT</span>
                 <span id="race-checkpoint" class="stat-value">1 <span class="stat-total">/ 10</span></span>
             </div>
+        </div>
+    </div>
+
+    <!-- VELOCÍMETRO PADRÃO DO SERVIDOR -->
+    <div id="speedometer" class="speedometer hidden">
+        <div class="speed-ring">
+            <div class="speed-value" id="speed-value">0</div>
+            <div class="speed-unit">KM/H</div>
+        </div>
+        <div class="speed-meta">
+            <span id="speed-gear">N</span>
+            <span id="speed-fuel">100%</span>
         </div>
     </div>
 

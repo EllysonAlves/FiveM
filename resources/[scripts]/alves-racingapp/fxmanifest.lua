@@ -13,7 +13,8 @@ ui_page 'ui/index.html'
 
 shared_scripts {
     '@ox_lib/init.lua',
-    '@qbx_core/modules/playerdata.lua'
+    '@qbx_core/modules/playerdata.lua',
+    'config.lua'
 }
 
 client_scripts {
@@ -28,7 +29,6 @@ server_scripts {
 files {
     'ui/index.html',
     'ui/style.css',
-    'ui/tablet-new.css',
     'ui/script.js'
 }
 

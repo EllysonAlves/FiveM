@@ -1,6 +1,5 @@
 # FiveM / Qbox - arquivos locais e pesados
 
-.server.cfg.example
 
 # Cache/runtime
 cache/
@@ -69,3 +68,8 @@ Thumbs.db
 *.tmp
 *.bak
 *.backup
+
+# Backups de configs reais
+server.cfg.bkp
+*.cfg.bkp
+*.cfg.backup

@@ -1,8 +1,39 @@
-// Alves Racing - UI Script
+// Alves Racing - UI Script sem dependências externas
 
 let raceStartTime = 0;
 let timerInterval = null;
 let countdownInterval = null;
+
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+function setText(selector, value) {
+    const el = $(selector);
+    if (el) el.textContent = value;
+}
+
+function setHtml(selector, value) {
+    const el = $(selector);
+    if (el) el.innerHTML = value;
+}
+
+function addClass(selector, cls) {
+    const el = typeof selector === 'string' ? $(selector) : selector;
+    if (el) el.classList.add(cls);
+}
+
+function removeClass(selector, cls) {
+    const el = typeof selector === 'string' ? $(selector) : selector;
+    if (el) el.classList.remove(cls);
+}
+
+function nuiPost(eventName, payload = {}) {
+    fetch(`https://alves-racingapp/${eventName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+        body: JSON.stringify(payload)
+    }).catch(() => {});
+}
 
 window.addEventListener('message', function(event) {
     const data = event.data || {};
@@ -13,81 +44,97 @@ window.addEventListener('message', function(event) {
         case 'updateRaceHUD': updateRaceHUD(data.data || {}); break;
         case 'showRaceHUD': showRaceHUD(); break;
         case 'hideRaceHUD': hideRaceHUD(); break;
-        case 'hideCountdown': hideCountdown(); break;
         case 'updateProfile': updateProfile(data.data || {}); break;
         case 'showScoreboard': displayScoreboard(data.data || {}); break;
         case 'showRanking': displayRanking(data.data || {}); break;
         case 'showProfile': displayProfile(data.data || {}); break;
+        case 'updateSpeedometer': updateSpeedometer(data.data || {}); break;
     }
 });
 
+function setActiveMenu(label) {
+    $$('.menu-item').forEach(item => {
+        item.classList.toggle('active', item.textContent.toUpperCase().includes(label.toUpperCase()));
+    });
+}
+
 function openTablet(data) {
-    $('#tablet').removeClass('hidden');
+    removeClass('#tablet', 'hidden');
     const player = data?.player || {};
 
-    $('#player-id').text(player.id || '0000');
-    $('#player-name').text(player.name || 'Piloto');
-    $('#player-level').text(player.level || '1');
+    setText('#player-id', player.id || '0000');
+    setText('#player-name', player.name || 'Piloto');
+    setText('#player-level', player.level || '1');
 
     const elo = player.elo || 0;
     const level = player.level || 1;
-    $('#level-progress').text(`${elo} / ${level * 50} XP`);
-    $('#level-fill').css('width', `${player.levelProgress || 0}%`);
+    setText('#level-progress', `${elo} / ${level * 50} XP`);
+    const fill = $('#level-fill');
+    if (fill) fill.style.width = `${player.levelProgress || 0}%`;
 
     const stats = player.stats || {};
-    $('#stats-races').text(stats.races || '0');
-    $('#stats-wins').text(stats.wins || '0');
+    setText('#stats-races', stats.races || '0');
+    setText('#stats-wins', stats.wins || '0');
 
     const totalSeconds = stats.totalTime || 0;
-    $('#stats-time').text(`${Math.floor(totalSeconds / 3600)}h ${Math.floor((totalSeconds % 3600) / 60)}m`);
-
-    if (stats.bestLap && stats.bestLap > 0) {
-        $('#stats-best').text(formatTime(stats.bestLap));
-    } else {
-        $('#stats-best').text('--:--.---');
-    }
-
-    $('#online-players').text(data?.onlineCount ?? '0');
+    setText('#stats-time', `${Math.floor(totalSeconds / 3600)}h ${Math.floor((totalSeconds % 3600) / 60)}m`);
+    setText('#stats-best', stats.bestLap && stats.bestLap > 0 ? formatTime(stats.bestLap) : '--:--.---');
+    setText('#online-players', data?.onlineCount ?? '0');
 }
 
 function closeTablet() {
-    $('#tablet').addClass('hidden');
-    $.post('https://alves-racingapp/closeTablet');
+    addClass('#tablet', 'hidden');
+    nuiPost('closeTablet');
+}
+
+function showDashboard() {
+    setActiveMenu('DASHBOARD');
+    $$('.modal').forEach(m => m.classList.add('hidden'));
+}
+
+function showComingSoon(name) {
+    $$('.modal').forEach(m => m.classList.add('hidden'));
+    displayInfoModal(name, 'Área preparada para a identidade visual do servidor. Funcionalidade pode ser conectada na próxima fase.');
+}
+
+function displayInfoModal(title, message) {
+    setText('#scoreboard-title', title.toUpperCase());
+    setHtml('#scoreboard-tbody', `<tr><td colspan="4" style="text-align:center;">${message}</td></tr>`);
+    removeClass('#modal-scoreboard', 'hidden');
 }
 
 function startRace(type) {
-    $.post('https://alves-racingapp/startRace', JSON.stringify({ raceType: type }));
+    nuiPost('startRace', { raceType: type });
     closeTablet();
 }
 
 function showScoreboard() {
-    $.post('https://alves-racingapp/showScoreboard');
+    nuiPost('showScoreboard');
 }
 
 function showRanking() {
-    $('.menu-item').removeClass('active');
-    $('.menu-item').has('span:contains("RANKING")').addClass('active');
-    $.post('https://alves-racingapp/showRanking');
+    setActiveMenu('RANKING');
+    nuiPost('showRanking');
 }
 
 function showProfile() {
-    $.post('https://alves-racingapp/showProfile');
+    setActiveMenu('PERFIL');
+    nuiPost('showProfile');
 }
 
 function showRaceHUD() {
-    $('#race-hud').removeClass('hidden');
+    removeClass('#race-hud', 'hidden');
     raceStartTime = Date.now();
     startTimer();
 }
 
 function hideRaceHUD() {
-    $('#race-hud').addClass('hidden');
+    addClass('#race-hud', 'hidden');
     stopTimer();
 }
 
 function hideCountdown() {
-    $('#countdown').addClass('hidden');
-
+    addClass('#countdown', 'hidden');
     if (countdownInterval) {
         clearInterval(countdownInterval);
         countdownInterval = null;
@@ -96,78 +143,50 @@ function hideCountdown() {
 
 function startCountdown(seconds) {
     hideCountdown();
-
     const countdown = $('#countdown');
     const countdownNumber = $('#countdown-number');
+    if (!countdown || !countdownNumber) return;
 
-    countdown.removeClass('hidden');
-
+    countdown.classList.remove('hidden');
     let current = Number(seconds) || 0;
-    countdownNumber.text(current > 0 ? current : 'GO!');
+    countdownNumber.textContent = current > 0 ? current : 'GO!';
 
     if (countdownInterval) clearInterval(countdownInterval);
-
     countdownInterval = setInterval(() => {
         current -= 1;
-
         if (current <= 0) {
-            countdownNumber.text('GO!');
-
+            countdownNumber.textContent = 'GO!';
             setTimeout(() => {
                 hideCountdown();
                 showRaceHUD();
             }, 800);
-
             clearInterval(countdownInterval);
             countdownInterval = null;
         } else {
-            countdownNumber.text(current);
+            countdownNumber.textContent = current;
         }
     }, 1000);
 }
 
 function updateRaceHUD(data) {
     const d = data || {};
-
     if (d.position !== undefined) {
-        $('#race-position').html(
-            d.totalRacers !== undefined
-                ? `${d.position}º <span class="stat-total">/ ${d.totalRacers}</span>`
-                : `${d.position}º`
-        );
+        setHtml('#race-position', d.totalRacers !== undefined ? `${d.position}º <span class="stat-total">/ ${d.totalRacers}</span>` : `${d.position}º`);
     }
-
     if (d.lap !== undefined) {
-        $('#race-lap').html(
-            d.totalLaps !== undefined
-                ? `${d.lap} <span class="stat-total">/ ${d.totalLaps}</span>`
-                : `${d.lap}`
-        );
+        setHtml('#race-lap', d.totalLaps !== undefined ? `${d.lap} <span class="stat-total">/ ${d.totalLaps}</span>` : `${d.lap}`);
     }
-
     if (d.checkpoint !== undefined) {
-        $('#race-checkpoint').html(
-            d.totalCheckpoints !== undefined
-                ? `${d.checkpoint} <span class="stat-total">/ ${d.totalCheckpoints}</span>`
-                : `${d.checkpoint}`
-        );
+        setHtml('#race-checkpoint', d.totalCheckpoints !== undefined ? `${d.checkpoint} <span class="stat-total">/ ${d.totalCheckpoints}</span>` : `${d.checkpoint}`);
     }
-
-    if (d.bestLap !== undefined) {
-        $('#race-best-lap').text(d.bestLap === 0 ? '--:--.---' : formatTime(d.bestLap));
-    }
-
-    if (d.time !== undefined) {
-        $('#race-time').text(formatTime(d.time));
-    }
+    if (d.bestLap !== undefined) setText('#race-best-lap', d.bestLap === 0 ? '--:--.---' : formatTime(d.bestLap));
+    if (d.time !== undefined) setText('#race-time', formatTime(d.time));
 }
 
 function startTimer() {
     stopTimer();
-
     timerInterval = setInterval(() => {
-        const elapsed = Date.now() - raceStartTime;
-        $('#race-time').text(formatTime(elapsed));
+        setText('#race-time', formatTime(Date.now() - raceStartTime));
     }, 100);
 }
 
@@ -179,17 +198,13 @@ function stopTimer() {
 }
 
 function updateProfile(data) {
-    if (data?.elo !== undefined) {
-        $('#profile-elo').text(`ELO: ${data.elo}`);
-    }
+    if (data?.elo !== undefined) setText('#profile-elo', `ELO: ${data.elo}`);
 }
 
 function displayScoreboard(data) {
-    $('.modal').addClass('hidden');
-    $('#scoreboard-title').text(`SCOREBOARD - ${data?.trackName || 'CORRIDA'}`);
-
+    $$('.modal').forEach(m => m.classList.add('hidden'));
+    setText('#scoreboard-title', data?.trackName ? `SCOREBOARD - ${data.trackName}` : 'SCOREBOARD GLOBAL');
     let html = '';
-
     if (Array.isArray(data?.times) && data.times.length) {
         data.times.forEach((entry, index) => {
             html += `
@@ -198,124 +213,81 @@ function displayScoreboard(data) {
                     <td>${entry.racerName || entry.racer || 'Desconhecido'}</td>
                     <td>${entry.vehicleModel || entry.car || 'N/A'}</td>
                     <td>${formatTime(entry.time || 0)}</td>
-                </tr>
-            `;
+                </tr>`;
         });
     } else {
         html = '<tr><td colspan="4" style="text-align:center;">Nenhum tempo registrado ainda</td></tr>';
     }
-
-    $('#scoreboard-tbody').html(html);
-    $('#modal-scoreboard').removeClass('hidden');
+    setHtml('#scoreboard-tbody', html);
+    removeClass('#modal-scoreboard', 'hidden');
 }
 
 function displayRanking(data) {
-    $('.modal').addClass('hidden');
+    $$('.modal').forEach(m => m.classList.add('hidden'));
     let html = '';
-
     if (Array.isArray(data?.ranking) && data.ranking.length) {
         data.ranking.forEach((entry, index) => {
             const winRate = entry.races > 0 ? ((entry.wins / entry.races) * 100).toFixed(1) : '0.0';
             const tierColor = entry.tierColor || '#a855f7';
             const tierName = entry.elo_tier || 'Street';
             const eloPoints = entry.elo_points || 0;
-
             html += `
                 <div class="ranking-entry-card" style="--tier-color:${tierColor};">
                     <div class="ranking-position">#${index + 1}</div>
                     <div class="ranking-tier-badge">${tierName}</div>
                     <div class="ranking-info">
                         <div class="ranking-name">${entry.racername || 'Desconhecido'}</div>
-                        <div class="ranking-stat">
-                            <span class="ranking-stat-label">ELO</span>
-                            <span class="ranking-stat-value" style="color:${tierColor};">${eloPoints} PTS</span>
-                        </div>
-                        <div class="ranking-stat">
-                            <span class="ranking-stat-label">Corridas</span>
-                            <span class="ranking-stat-value">${entry.races || 0}</span>
-                        </div>
-                        <div class="ranking-stat">
-                            <span class="ranking-stat-label">Vitórias</span>
-                            <span class="ranking-stat-value">${entry.wins || 0}</span>
-                        </div>
-                        <div class="ranking-stat">
-                            <span class="ranking-stat-label">Taxa de Vitória</span>
-                            <span class="ranking-stat-value">${winRate}%</span>
-                        </div>
+                        <div class="ranking-stat"><span class="ranking-stat-label">ELO</span><span class="ranking-stat-value" style="color:${tierColor};">${eloPoints} PTS</span></div>
+                        <div class="ranking-stat"><span class="ranking-stat-label">Corridas</span><span class="ranking-stat-value">${entry.races || 0}</span></div>
+                        <div class="ranking-stat"><span class="ranking-stat-label">Vitórias</span><span class="ranking-stat-value">${entry.wins || 0}</span></div>
+                        <div class="ranking-stat"><span class="ranking-stat-label">Taxa de Vitória</span><span class="ranking-stat-value">${winRate}%</span></div>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
     } else {
         html = '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.5);padding:40px;">Nenhum piloto no ranking</div>';
     }
-
-    $('#ranking-list').html(html);
-    $('#modal-ranking').removeClass('hidden');
+    setHtml('#ranking-list', html);
+    removeClass('#modal-ranking', 'hidden');
 }
 
 function displayProfile(data) {
-    $('.modal').addClass('hidden');
-    $('#profile-name').text(`PERFIL - ${data?.racername || 'PILOTO'}`);
-
+    $$('.modal').forEach(m => m.classList.add('hidden'));
+    setText('#profile-name', `PERFIL - ${data?.racername || 'PILOTO'}`);
     const winRate = data?.races > 0 ? ((data.wins / data.races) * 100).toFixed(1) : '0.0';
     const bestTimeFormatted = data?.bestTime > 0 ? formatTime(data.bestTime) : 'N/A';
     const tierProgress = data?.tierMaxPoints > 0 ? ((data.pointsInTier / data.tierMaxPoints) * 100).toFixed(1) : 0;
     const tierColor = data?.tierColor || '#a855f7';
 
-    $('#profile-stats').html(`
+    setHtml('#profile-stats', `
         <div class="tier-card" style="grid-column:1/-1; background: linear-gradient(135deg, ${tierColor}20 0%, ${tierColor}10 100%); border-left-color:${tierColor};">
-            <div class="tier-header">
-                <div>
-                    <span class="tier-label">TIER ATUAL</span>
-                    <span class="tier-name" style="color:${tierColor};">${data?.eloTier || 'Street'}</span>
-                </div>
-                <span class="tier-points" style="color:${tierColor};">${data?.eloPoints || 0} PTS</span>
-            </div>
-            <div class="tier-progress-container">
-                <div class="tier-progress-bar">
-                    <div class="tier-progress-fill" style="width:${tierProgress}%; background:${tierColor};"></div>
-                </div>
-                <span class="tier-progress-text">${data?.pointsInTier || 0}/${data?.tierMaxPoints || 100} pontos para próximo tier</span>
-            </div>
+            <div class="tier-header"><div><span class="tier-label">TIER ATUAL</span><span class="tier-name" style="color:${tierColor};">${data?.eloTier || 'Street'}</span></div><span class="tier-points" style="color:${tierColor};">${data?.eloPoints || 0} PTS</span></div>
+            <div class="tier-progress-container"><div class="tier-progress-bar"><div class="tier-progress-fill" style="width:${tierProgress}%; background:${tierColor};"></div></div><span class="tier-progress-text">${data?.pointsInTier || 0}/${data?.tierMaxPoints || 100} pontos para próximo tier</span></div>
         </div>
+        <div class="stat-row"><span class="stat-label">NOME DO PILOTO</span><span class="stat-value">${data?.racername || 'Desconhecido'}</span></div>
+        <div class="stat-row"><span class="stat-label">POSIÇÃO NO RANKING</span><span class="stat-value">#${data?.position || 'N/A'}</span></div>
+        <div class="stat-row"><span class="stat-label">CORRIDAS</span><span class="stat-value">${data?.races || 0}</span></div>
+        <div class="stat-row"><span class="stat-label">VITÓRIAS</span><span class="stat-value">${data?.wins || 0}</span></div>
+        <div class="stat-row"><span class="stat-label">TAXA DE VITÓRIA</span><span class="stat-value">${winRate}%</span></div>
+        <div class="stat-row"><span class="stat-label">MELHOR TEMPO</span><span class="stat-value">${bestTimeFormatted}</span></div>`);
+    removeClass('#modal-profile', 'hidden');
+}
 
-        <div class="stat-row">
-            <span class="stat-label">NOME DO PILOTO</span>
-            <span class="stat-value">${data?.racername || 'Desconhecido'}</span>
-        </div>
-
-        <div class="stat-row">
-            <span class="stat-label">POSIÇÃO NO RANKING</span>
-            <span class="stat-value">#${data?.position || 'N/A'}</span>
-        </div>
-
-        <div class="stat-row">
-            <span class="stat-label">CORRIDAS</span>
-            <span class="stat-value">${data?.races || 0}</span>
-        </div>
-
-        <div class="stat-row">
-            <span class="stat-label">VITÓRIAS</span>
-            <span class="stat-value">${data?.wins || 0}</span>
-        </div>
-
-        <div class="stat-row">
-            <span class="stat-label">TAXA DE VITÓRIA</span>
-            <span class="stat-value">${winRate}%</span>
-        </div>
-
-        <div class="stat-row">
-            <span class="stat-label">MELHOR TEMPO</span>
-            <span class="stat-value">${bestTimeFormatted}</span>
-        </div>
-    `);
-
-    $('#modal-profile').removeClass('hidden');
+function updateSpeedometer(data) {
+    const speedometer = $('#speedometer');
+    if (!speedometer) return;
+    if (!data.show) {
+        speedometer.classList.add('hidden');
+        return;
+    }
+    speedometer.classList.remove('hidden');
+    setText('#speed-value', Math.max(0, Math.floor(data.speed || 0)));
+    setText('#speed-gear', data.gear && data.gear > 0 ? `M${data.gear}` : 'N');
+    setText('#speed-fuel', `${Math.floor(data.fuel ?? 100)}%`);
 }
 
 function closeModal() {
-    $('.modal').addClass('hidden');
+    $$('.modal').forEach(m => m.classList.add('hidden'));
 }
 
 function formatTime(milliseconds) {
@@ -324,7 +296,6 @@ function formatTime(milliseconds) {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     const millis = ms % 1000;
-
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
 }
 
@@ -332,7 +303,6 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeModal();
         closeTablet();
-        hideCountdown();
-        hideRaceHUD();
+        // Não escondemos HUD/countdown aqui para não quebrar corrida em andamento.
     }
 });

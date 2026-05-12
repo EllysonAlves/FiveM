@@ -292,3 +292,78 @@ altitude {
   font-weight: 600;
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.6), 0 0 1px rgba(0, 0, 0, 0.6), 0 0 1px rgba(0, 0, 0, 0.6), 0 0 1px rgba(0, 0, 0, 0.6);
 }
+
+/* ==================== ALVES RACING THEME ==================== */
+:root {
+  --alves-bg: #080712;
+  --alves-panel: rgba(12, 10, 24, .88);
+  --alves-primary: #8b5cf6;
+  --alves-primary-light: #a855f7;
+  --alves-accent: #fbbf24;
+  --alves-text: #ffffff;
+}
+
+.bg-active-tab,
+.bg-panel,
+div#openmenu,
+.q-menu,
+.q-card {
+  background: var(--alves-panel) !important;
+  border-color: rgba(139, 92, 246, .35) !important;
+}
+
+.bg-bgbutton {
+  background: linear-gradient(135deg, var(--alves-primary), var(--alves-primary-light)) !important;
+  color: #fff !important;
+  box-shadow: 0 0 18px rgba(139, 92, 246, .35) !important;
+}
+
+.text-textbutton,
+.text-toggleicons,
+.text-checkbox,
+.q-checkbox__inner--truthy,
+.q-slider__track,
+.q-slider__thumb {
+  color: var(--alves-primary-light) !important;
+}
+
+.q-checkbox__inner--truthy .q-checkbox__bg {
+  background: var(--alves-primary) !important;
+  border-color: var(--alves-primary-light) !important;
+  box-shadow: 0 0 12px rgba(168, 85, 247, .45) !important;
+}
+
+.text-h6,
+.text-h7,
+.text-tabcolor {
+  color: rgba(255,255,255,.92) !important;
+}
+
+.text-harness,
+.text-nos,
+.text-cruise,
+.text-armed {
+  color: var(--alves-primary-light) !important;
+}
+
+#sign,
+#bank,
+#plus {
+  color: #22c55e !important;
+}
+
+#minus,
+.text-stress {
+  color: #ef4444 !important;
+}
+
+#playerhud .q-circular-progress,
+#veh-container .q-circular-progress {
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, .22));
+}
+
+.street-container,
+.baseplate {
+  color: var(--alves-text) !important;
+  text-shadow: 0 0 8px rgba(139, 92, 246, .55), 0 1px 2px rgba(0,0,0,.9) !important;
+}

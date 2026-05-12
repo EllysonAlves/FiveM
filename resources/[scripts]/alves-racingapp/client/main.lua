@@ -10,22 +10,23 @@ local startTime = 0
 local lapStartTime = 0
 
 -- ==================== CONFIGURAÇÃO ====================
-local Config = {
-    CheckpointBuffer = 5.0,
-    MarkAmountOfCheckpointsAhead = 3,
-    ShowGpsRoute = true,
-    UseRoadsForGps = true,
-    GpsColor = 6, -- Roxo (cor 6 para GPS routes)
-    BlipColor = 85, -- Roxo (cor 85 para blips)
-    DrawTextSetup = {
-        markerType = 1,
-        minHeight = 1.0,
-        maxHeight = 30.0,
-        baseSize = 0.1,
-        markerColor = { r = 139, g = 92, b = 246, a = 220 }, -- Roxo
-        distanceColor = { r = 255, g = 255, b = 255, a = 255 },
-        primaryColor = { r = 168, g = 85, b = 247, a = 255 } -- Roxo claro
-    }
+-- Config vem de config.lua (shared_script). Mantemos fallback para compatibilidade.
+Config = Config or {}
+Config.CheckpointBuffer = Config.CheckpointBuffer or 5.0
+Config.MarkAmountOfCheckpointsAhead = Config.CheckpointsAhead or Config.MarkAmountOfCheckpointsAhead or 3
+Config.ShowGpsRoute = Config.ShowGpsRoute ~= false
+Config.UseRoadsForGps = Config.UseRoadsForGps ~= false
+Config.GpsColor = Config.GpsColor or 6
+Config.BlipColor = Config.BlipColor or 85
+Config.DefaultTotalRacers = Config.DefaultTotalRacers or 1
+Config.DrawTextSetup = Config.DrawTextSetup or {
+    markerType = 1,
+    minHeight = 1.0,
+    maxHeight = 30.0,
+    baseSize = 0.1,
+    markerColor = { r = 139, g = 92, b = 246, a = 220 },
+    distanceColor = { r = 255, g = 255, b = 255, a = 255 },
+    primaryColor = { r = 168, g = 85, b = 247, a = 255 }
 }
 
 -- ==================== COMANDOS ====================
@@ -350,6 +351,7 @@ RegisterNUICallback('startRace', function(data, cb)
             RaceTime = 0,
             TotalTime = 0,
             BestLap = 0,
+            TotalRacers = result.totalRacers or Config.DefaultTotalRacers,
             Vehicle = veh
         }
         
@@ -364,7 +366,7 @@ RegisterNUICallback('startRace', function(data, cb)
             action = 'updateRaceHUD',
             data = {
                 position = 1,
-                totalRacers = 3,
+                totalRacers = result.totalRacers or Config.DefaultTotalRacers,
                 lap = CurrentRaceData.Lap,
                 totalLaps = CurrentRaceData.TotalLaps,
                 checkpoint = CurrentRaceData.CurrentCheckpoint,
@@ -492,7 +494,7 @@ function initRacingHudThread()
                     action = 'updateRaceHUD',
                     data = {
                         position = 1,
-                        totalRacers = 3,
+                        totalRacers = CurrentRaceData.TotalRacers or Config.DefaultTotalRacers,
                         lap = CurrentRaceData.Lap,
                         totalLaps = CurrentRaceData.TotalLaps,
                         checkpoint = CurrentRaceData.CurrentCheckpoint,
@@ -582,5 +584,35 @@ CreateThread(function()
                 applyFullTuning(veh)
             end
         end
+    end
+end)
+
+-- ==================== SPEEDOMETER ====================
+CreateThread(function()
+    while true do
+        local waitTime = 500
+        local ped = PlayerPedId()
+        local veh = GetVehiclePedIsIn(ped, false)
+
+        if veh ~= 0 and DoesEntityExist(veh) and GetPedInVehicleSeat(veh, -1) == ped then
+            waitTime = 150
+            local speed = GetEntitySpeed(veh) * 3.6
+            local gear = GetVehicleCurrentGear(veh)
+            local fuel = GetVehicleFuelLevel(veh)
+
+            SendNUIMessage({
+                action = 'updateSpeedometer',
+                data = {
+                    show = true,
+                    speed = speed,
+                    gear = gear,
+                    fuel = fuel
+                }
+            })
+        else
+            SendNUIMessage({ action = 'updateSpeedometer', data = { show = false } })
+        end
+
+        Wait(waitTime)
     end
 end)
