@@ -1800,3 +1800,110 @@ body::after{
     color:var(--text-soft);
     padding:14px 0;
 }
+
+.lobby-mini{
+    position:absolute;
+    right:34px;
+    top:50%;
+    transform:translateY(-50%);
+    width:330px;
+    border-radius:24px;
+    overflow:hidden;
+    color:#fff;
+    border:1px solid rgba(168,85,247,.28);
+    background:
+        radial-gradient(circle at top right, rgba(168,85,247,.26), transparent 36%),
+        rgba(6,9,16,.88);
+    box-shadow:0 18px 45px rgba(0,0,0,.34), 0 0 28px rgba(124,58,237,.18);
+    animation:lobbyMiniIn .18s ease;
+}
+
+@keyframes lobbyMiniIn{
+    from{ opacity:0; transform:translate(16px,-50%) scale(.96); }
+    to{ opacity:1; transform:translate(0,-50%) scale(1); }
+}
+
+.lobby-mini-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:16px 18px;
+    background:linear-gradient(135deg, rgba(124,58,237,.42), rgba(37,99,235,.18));
+    border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.lobby-mini-header strong{
+    flex:1;
+    font-size:13px;
+    font-weight:950;
+    letter-spacing:.12em;
+}
+
+.lobby-mini-timer{
+    min-width:56px;
+    padding:7px 10px;
+    text-align:center;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:950;
+    background:linear-gradient(135deg, var(--purple), var(--purple-light));
+    box-shadow:0 0 18px rgba(168,85,247,.32);
+}
+
+.lobby-mini-body{
+    display:grid;
+    gap:10px;
+    padding:14px;
+}
+
+.lobby-mini-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    padding:12px;
+    border-radius:16px;
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.06);
+}
+
+.lobby-mini-row span{
+    color:var(--text-soft);
+    font-size:11px;
+    font-weight:850;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+}
+
+.lobby-mini-row strong{
+    max-width:150px;
+    text-align:right;
+    font-size:13px;
+    line-height:1.25;
+    text-transform:uppercase;
+}
+
+.lobby-mini-hotkeys{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    padding:0 14px 14px;
+    color:var(--text-soft);
+    font-size:11px;
+    font-weight:800;
+}
+
+.lobby-mini-hotkeys kbd{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:28px;
+    margin-right:4px;
+    padding:4px 6px;
+    border-radius:7px;
+    color:#fff;
+    font-size:10px;
+    font-weight:950;
+    background:rgba(168,85,247,.28);
+    border:1px solid rgba(168,85,247,.34);
+}

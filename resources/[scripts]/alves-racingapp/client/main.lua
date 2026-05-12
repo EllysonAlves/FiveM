@@ -4,6 +4,8 @@
 print('^2[Alves Racing]^0 Client iniciado!')
 
 local inRace = false
+local inLobby = false
+local lobbyOpen = false
 local CurrentRaceData = {}
 local checkpointBlips = {}
 local startTime = 0
@@ -32,11 +34,40 @@ Config.DrawTextSetup = Config.DrawTextSetup or {
 -- ==================== COMANDOS ====================
 RegisterCommand('race', function()
     print('[Alves Racing] Comando /race executado')
+    if inLobby then
+        lobbyOpen = true
+        SetNuiFocus(true, true)
+        SendNUIMessage({ action = 'maximizeLobby' })
+        return
+    end
     openTablet()
 end, false)
 
 RegisterKeyMapping('race', 'Abrir Menu de Corridas', 'keyboard', 'F1')
 print('^2[Alves Racing]^0 F1 registrado para abrir menu')
+
+RegisterCommand('race_lobby_toggle', function()
+    if not inLobby then return end
+
+    lobbyOpen = not lobbyOpen
+    SetNuiFocus(lobbyOpen, lobbyOpen)
+    SendNUIMessage({ action = lobbyOpen and 'maximizeLobby' or 'minimizeLobby' })
+end, false)
+
+RegisterKeyMapping('race_lobby_toggle', 'Abrir/fechar lobby de corrida', 'keyboard', 'F2')
+
+RegisterCommand('race_lobby_leave', function()
+    if not inLobby then return end
+
+    inLobby = false
+    lobbyOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'hideLobby' })
+    TriggerServerEvent('alves-racingapp:server:leaveRace')
+    lib.notify({ type = 'inform', description = 'Você saiu do lobby' })
+end, false)
+
+RegisterKeyMapping('race_lobby_leave', 'Sair do lobby de corrida', 'keyboard', 'F3')
 
 RegisterCommand('sair', function()
     if not inRace then
@@ -398,10 +429,13 @@ function startRaceSession(result)
 end
 
 RegisterNetEvent('alves-racingapp:client:updateLobby', function(data)
+    inLobby = true
     SendNUIMessage({ action = 'showLobby', data = data })
 end)
 
 RegisterNetEvent('alves-racingapp:client:startLobbyRace', function(result)
+    inLobby = false
+    lobbyOpen = false
     SetNuiFocus(false, false)
     CreateThread(function()
         startRaceSession(result)
@@ -416,8 +450,27 @@ end)
 
 RegisterNUICallback('leaveLobby', function(_, cb)
     cb('ok')
+    inLobby = false
+    lobbyOpen = false
+    SetNuiFocus(false, false)
     TriggerServerEvent('alves-racingapp:server:leaveRace')
     lib.notify({ type = 'inform', description = 'Você saiu do lobby' })
+end)
+
+RegisterNUICallback('minimizeLobby', function(_, cb)
+    cb('ok')
+    if inLobby then
+        lobbyOpen = false
+        SetNuiFocus(false, false)
+    end
+end)
+
+RegisterNUICallback('maximizeLobby', function(_, cb)
+    cb('ok')
+    if inLobby then
+        lobbyOpen = true
+        SetNuiFocus(true, true)
+    end
 end)
 
 RegisterNUICallback('startRace', function(data, cb)
@@ -439,6 +492,9 @@ RegisterNUICallback('startRace', function(data, cb)
             lib.notify({ type = 'error', description = 'Erro ao entrar no lobby' })
             return
         end
+        inLobby = true
+        lobbyOpen = true
+        SetNuiFocus(true, true)
         SendNUIMessage({ action = 'showLobby', data = lobby })
     end)
 end)

@@ -255,7 +255,7 @@
                 <div class="lobby-header-stats">
                     <span><strong id="lobby-players-count">0</strong> pilotos</span>
                     <span class="lobby-timer" id="lobby-timer">60s</span>
-                    <button class="modal-close" onclick="leaveLobby()">
+                    <button class="modal-close" onclick="minimizeLobby()">
                         <span class="ui-icon">×</span>
                     </button>
                 </div>
@@ -288,6 +288,33 @@
                     </section>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- LOBBY MINIMIZADO -->
+    <div id="lobby-mini" class="lobby-mini hidden">
+        <div class="lobby-mini-header">
+            <span class="ui-icon">🏁</span>
+            <strong>FILA DE CORRIDA</strong>
+            <span id="lobby-mini-timer" class="lobby-mini-timer">60s</span>
+        </div>
+        <div class="lobby-mini-body">
+            <div class="lobby-mini-row">
+                <span>Pista vencendo</span>
+                <strong id="lobby-mini-map">Aleatória</strong>
+            </div>
+            <div class="lobby-mini-row">
+                <span>Carro mais votado</span>
+                <strong id="lobby-mini-car">Aleatório</strong>
+            </div>
+            <div class="lobby-mini-row">
+                <span>Pilotos</span>
+                <strong><span id="lobby-mini-players">0</span> na fila</strong>
+            </div>
+        </div>
+        <div class="lobby-mini-hotkeys">
+            <span><kbd>F2</kbd> abrir/fechar</span>
+            <span><kbd>F3</kbd> sair da fila</span>
         </div>
     </div>
 
