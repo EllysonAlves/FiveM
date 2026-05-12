@@ -1363,3 +1363,10 @@ speed:after{
 .ref-scale .n0{ left:39px !important; bottom:92px !important; }
 .ref-scale .n140{ right:34px !important; bottom:92px !important; }
 .ref-scale .n160{ right:66px !important; bottom:57px !important; }
+
+
+/* RPM drives the outer arc + needle; center number remains vehicle speed. */
+.ref-gauge .ref-ring,
+.ref-gauge .ref-needle{
+  transition:transform .06s linear, background .06s linear;
+}
