@@ -195,7 +195,7 @@ function nextBlip(blip)
         -- Apenas destaca o próximo checkpoint. A rota fica a cargo do GPS multi-route,
         -- evitando conflito entre SetBlipRoute e StartGpsMultiRoute.
         SetBlipRoute(blip, false)
-        SetBlipColour(blip, Config.GpsColor or 5)
+        SetBlipColour(blip, Config.GpsColor or 83)
     end
 end
 
