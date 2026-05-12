@@ -5,6 +5,7 @@ let timerInterval = null;
 let countdownInterval = null;
 let lobbyInterval = null;
 let currentLobby = null;
+let lobbyMinimized = false;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -52,6 +53,9 @@ window.addEventListener('message', function(event) {
         case 'showProfile': displayProfile(data.data || {}); break;
         case 'showLobby': displayLobby(data.data || {}); break;
         case 'hideLobby': hideLobby(); break;
+        case 'minimizeLobby': minimizeLobby(false); break;
+        case 'maximizeLobby': maximizeLobby(false); break;
+        case 'toggleLobby': toggleLobby(false); break;
     }
 });
 
@@ -107,12 +111,16 @@ function displayInfoModal(title, message) {
 }
 
 function startRace(type) {
+    addClass('#tablet', 'hidden');
+    $$('.modal').forEach(m => m.classList.add('hidden'));
     nuiPost('startRace', { raceType: type });
 }
 
 function hideLobby() {
     addClass('#modal-lobby', 'hidden');
+    addClass('#lobby-mini', 'hidden');
     currentLobby = null;
+    lobbyMinimized = false;
     if (lobbyInterval) {
         clearInterval(lobbyInterval);
         lobbyInterval = null;
@@ -122,6 +130,59 @@ function hideLobby() {
 function leaveLobby() {
     nuiPost('leaveLobby');
     hideLobby();
+}
+
+function minimizeLobby(notifyClient = true) {
+    if (!currentLobby) return;
+    lobbyMinimized = true;
+    addClass('#modal-lobby', 'hidden');
+    removeClass('#lobby-mini', 'hidden');
+    updateLobbyMini();
+    if (notifyClient) nuiPost('minimizeLobby');
+}
+
+function maximizeLobby(notifyClient = true) {
+    if (!currentLobby) return;
+    lobbyMinimized = false;
+    addClass('#lobby-mini', 'hidden');
+    removeClass('#modal-lobby', 'hidden');
+    if (notifyClient) nuiPost('maximizeLobby');
+}
+
+function toggleLobby(notifyClient = true) {
+    if (!currentLobby) return;
+    if (lobbyMinimized || $('#modal-lobby')?.classList.contains('hidden')) {
+        maximizeLobby(notifyClient);
+    } else {
+        minimizeLobby(notifyClient);
+    }
+}
+
+function getTopVotedOption(options, votes, keyGetter) {
+    let winner = null;
+    let winnerVotes = 0;
+    (options || []).forEach(option => {
+        const key = String(keyGetter(option));
+        const count = Number(votes?.[key] || 0);
+        if (count > winnerVotes) {
+            winner = option;
+            winnerVotes = count;
+        }
+    });
+    return winnerVotes > 0 ? winner : null;
+}
+
+function updateLobbyMini() {
+    if (!currentLobby) return;
+    const mapWinner = getTopVotedOption(currentLobby.mapOptions || [], currentLobby.mapVotes || {}, map => map.id);
+    const carWinner = getTopVotedOption(currentLobby.vehicleOptions || [], currentLobby.carVotes || {}, vehicle => vehicle);
+
+    setText('#lobby-mini-map', mapWinner?.name || 'Aleatória');
+    setText('#lobby-mini-car', carWinner || 'Aleatório');
+    setText('#lobby-mini-players', currentLobby.playerCount || 0);
+
+    const remaining = Math.max(0, (currentLobby.endsAt || 0) - Math.floor(Date.now() / 1000));
+    setText('#lobby-mini-timer', `${remaining}s`);
 }
 
 function voteMap(mapId) {
@@ -137,7 +198,15 @@ function voteCar(vehicleModel) {
 function displayLobby(data) {
     currentLobby = data || {};
     $$('.modal').forEach(m => m.classList.add('hidden'));
-    removeClass('#modal-lobby', 'hidden');
+    addClass('#tablet', 'hidden');
+
+    if (lobbyMinimized) {
+        addClass('#modal-lobby', 'hidden');
+        removeClass('#lobby-mini', 'hidden');
+    } else {
+        addClass('#lobby-mini', 'hidden');
+        removeClass('#modal-lobby', 'hidden');
+    }
 
     const typeText = currentLobby.raceType === 'ranked' ? 'RANQUEADA' : 'CASUAL';
     setText('#lobby-title', `LOBBY ${typeText}`);
@@ -146,6 +215,7 @@ function displayLobby(data) {
     const renderTimer = () => {
         const remaining = Math.max(0, (currentLobby.endsAt || 0) - Math.floor(Date.now() / 1000));
         setText('#lobby-timer', `${remaining}s`);
+        updateLobbyMini();
     };
     renderTimer();
     if (lobbyInterval) clearInterval(lobbyInterval);
@@ -407,8 +477,24 @@ function formatTime(milliseconds) {
 }
 
 document.addEventListener('keydown', function(e) {
+    if (e.key === 'F2') {
+        e.preventDefault();
+        toggleLobby();
+        return;
+    }
+
+    if (e.key === 'F3') {
+        e.preventDefault();
+        if (currentLobby) leaveLobby();
+        return;
+    }
+
     if (e.key === 'Escape') {
-        closeModal();
+        if (currentLobby && !$('#modal-lobby')?.classList.contains('hidden')) {
+            minimizeLobby();
+        } else {
+            closeModal();
+        }
         closeTablet();
         // Não escondemos HUD/countdown aqui para não quebrar corrida em andamento.
     }
