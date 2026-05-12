@@ -13,7 +13,7 @@ local lapStartTime = 0
 -- Config vem de config.lua (shared_script). Mantemos fallback para compatibilidade.
 Config = Config or {}
 Config.CheckpointBuffer = Config.CheckpointBuffer or 5.0
-Config.MarkAmountOfCheckpointsAhead = Config.CheckpointsAhead or Config.MarkAmountOfCheckpointsAhead or 3
+Config.MarkAmountOfCheckpointsAhead = Config.CheckpointsAhead or Config.MarkAmountOfCheckpointsAhead or 8
 Config.ShowGpsRoute = Config.ShowGpsRoute ~= false
 Config.UseRoadsForGps = Config.UseRoadsForGps ~= false
 Config.GpsColor = Config.GpsColor or 5
@@ -174,7 +174,7 @@ function updateGpsForRace()
     end
     
     if Config.UseRoadsForGps then
-        SetGpsMultiRouteRender(Config.ShowGpsRoute, Config.GpsColor, Config.GpsColor)
+        SetGpsMultiRouteRender(Config.ShowGpsRoute)
     else
         SetGpsCustomRouteRender(Config.ShowGpsRoute, Config.GpsColor, Config.GpsColor)
     end
@@ -189,9 +189,10 @@ end
 
 function nextBlip(blip)
     if DoesBlipExist(blip) then
-        SetBlipColour(blip, 85) -- Roxo vivo (próximo)
-        SetBlipRoute(blip, true)
-        SetBlipRouteColour(blip, Config.GpsColor or 5)
+        -- Apenas destaca o próximo checkpoint. A rota fica a cargo do GPS multi-route,
+        -- evitando conflito entre SetBlipRoute e StartGpsMultiRoute.
+        SetBlipRoute(blip, false)
+        SetBlipColour(blip, Config.GpsColor or 5)
     end
 end
 

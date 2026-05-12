@@ -309,8 +309,7 @@
             <div id="veh-container">
                 <div v-show="show" class="alves-vehicle-hud">
                     <div class="alves-speed-card">
-                        <div class="alves-gauge-shell">
-                            <div class="alves-gauge-progress" :style="{ '--rpm': Math.min(100, rpm || 0) + '%' }"></div>
+                        <div class="alves-gauge-shell" :style="{ '--rpm': Math.min(100, rpm || 0) + '%' }">
                             <div class="alves-gauge-center">
                                 <span class="alves-speed-value">{{ speed }}</span>
                                 <span class="alves-speed-unit">MPH</span>

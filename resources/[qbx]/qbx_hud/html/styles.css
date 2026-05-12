@@ -725,3 +725,25 @@ speed:after{
   font-weight:950 !important;
   line-height:1;
 }
+
+
+/* ==================== ALVES RACING HOTFIX - SPEED RIGHT / MAP BORDER / RPM ==================== */
+.alves-vehicle-hud{
+  left:auto !important;
+  right:3.2vh !important;
+  bottom:5.4vh !important;
+}
+
+/* A borda quadrada/circular padrão do qbx_hud está desalinhada com este minimap.
+   Escondemos para não ficar um quadrado solto fora do enquadro. */
+#veh-container .border,
+#veh-container .square,
+#veh-container .circle{
+  display:none !important;
+}
+
+.alves-gauge-shell{
+  background:
+    radial-gradient(circle at center, rgba(8,9,15,.34) 0 48%, transparent 49%),
+    conic-gradient(from 225deg, #c084fc 0 var(--rpm, 0%), rgba(255,255,255,.20) var(--rpm, 0%) 72%, transparent 72% 100%) !important;
+}

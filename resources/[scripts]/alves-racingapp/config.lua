@@ -29,7 +29,7 @@ Config.LapsByDistance = {
     { minDistance = 0, laps = 0 } -- 0 = sprint
 }
 
-Config.CheckpointsAhead = 3
+Config.CheckpointsAhead = 8
 Config.CheckpointBuffer = 5.0
 Config.ShowGpsRoute = true
 Config.UseRoadsForGps = true
