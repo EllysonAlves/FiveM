@@ -1307,3 +1307,59 @@ speed:after{
     bottom:2.6vh !important;
   }
 }
+
+
+/* ==================== ALVES RACING SPEEDOMETER V9 - NEEDLE/PANEL FIX ==================== */
+.ref-gauge{
+  --speed-deg: var(--speed-deg, 0deg);
+}
+
+.ref-ring{
+  background:
+    radial-gradient(circle at center, rgba(5,5,10,0) 0 49%, rgba(8,8,14,.30) 50% 60%, transparent 61%),
+    conic-gradient(from 222deg, var(--purple) 0 var(--speed-deg, 0deg), rgba(235,235,245,.22) var(--speed-deg, 0deg) 276deg, transparent 276deg 360deg) !important;
+}
+
+.ref-needle{
+  width:82px !important;
+  height:4px !important;
+  transform:rotate(calc(222deg + var(--speed-deg, 0deg))) !important;
+  background:linear-gradient(90deg, rgba(155,77,255,0), #b45cff 38%, #ffffff 100%) !important;
+  box-shadow:0 0 18px rgba(180,92,255,.95), 0 0 4px rgba(255,255,255,.75) !important;
+}
+
+.ref-needle::after{
+  content:"";
+  position:absolute;
+  right:-3px;
+  top:50%;
+  width:8px;
+  height:8px;
+  transform:translateY(-50%);
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 12px rgba(180,92,255,.95);
+}
+
+.ref-bottom-panel{
+  bottom:-9px !important;
+  width:136px !important;
+  min-height:52px !important;
+  padding:7px 9px !important;
+  border-radius:17px !important;
+  background:rgba(8,8,13,.78) !important;
+}
+
+.ref-panel-divider{
+  height:34px !important;
+}
+
+.ref-icon{ font-size:10px !important; }
+.ref-label{ font-size:7px !important; }
+.ref-value{ font-size:13px !important; }
+.ref-mini-bar{ width:32px !important; height:3px !important; }
+
+/* Sobe levemente os números inferiores para o painel não passar por cima */
+.ref-scale .n0{ left:39px !important; bottom:92px !important; }
+.ref-scale .n140{ right:34px !important; bottom:92px !important; }
+.ref-scale .n160{ right:66px !important; bottom:57px !important; }

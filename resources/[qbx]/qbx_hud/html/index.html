@@ -308,7 +308,7 @@
             </div>
             <div id="veh-container">
                 <div v-show="show" class="alves-vehicle-hud alves-ref-speedometer">
-                    <div class="ref-gauge" :class="rpmLevel" :style="{ '--speed': speedPercent + '%', '--fuel': fuelPercent + '%' }">
+                    <div class="ref-gauge" :class="rpmLevel" :style="{ '--speed': speedPercent + '%', '--speed-deg': speedDeg, '--fuel': fuelPercent + '%' }">
                         <div class="ref-ring"></div>
                         <div class="ref-ticks"></div>
                         <div class="ref-scale">

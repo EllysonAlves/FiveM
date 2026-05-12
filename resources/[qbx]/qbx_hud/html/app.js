@@ -982,6 +982,9 @@ const vehHud = {
     speedPercent() {
       return Math.max(0, Math.min(100, (Number(this.speed || 0) / 160) * 100));
     },
+    speedDeg() {
+      return Math.max(0, Math.min(276, (Number(this.speed || 0) / 160) * 276)).toFixed(1) + 'deg';
+    },
     fuelPercent() {
       return Math.max(0, Math.min(100, Number(this.fuel || 0)));
     },
