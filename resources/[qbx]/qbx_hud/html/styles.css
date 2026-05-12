@@ -1405,3 +1405,35 @@ speed:after{
 .ref-scale .n160{
   color:rgba(255,210,210,.92) !important;
 }
+
+
+/* ==================== ALVES RACING RPM GAUGE V11 - ANGLE SYNC + ORDER ==================== */
+/* CSS conic-gradient: 0deg = topo. Ponteiro DOM: 0deg = direita.
+   Portanto 222deg do conic == 132deg no ponteiro. */
+.ref-needle{
+  transform:rotate(calc(132deg + var(--rpm-deg, 0deg))) !important;
+}
+
+/* Escala RPM x1000 ordenada no mesmo arco do progress: 222deg → 498deg. */
+.ref-scale .n{
+  width:22px;
+  text-align:center;
+  font-size:16px !important;
+}
+.ref-scale .n0{ left:51px !important; top:183px !important; bottom:auto !important; right:auto !important; }
+.ref-scale .n20{ left:24px !important; top:136px !important; bottom:auto !important; right:auto !important; }
+.ref-scale .n40{ left:27px !important; top:82px !important; bottom:auto !important; right:auto !important; }
+.ref-scale .n60{ left:61px !important; top:40px !important; bottom:auto !important; right:auto !important; }
+.ref-scale .n80{ left:112px !important; top:24px !important; bottom:auto !important; right:auto !important; }
+.ref-scale .n100{ left:164px !important; top:40px !important; bottom:auto !important; right:auto !important; }
+.ref-scale .n120{ left:197px !important; top:82px !important; bottom:auto !important; right:auto !important; }
+.ref-scale .n140{ left:201px !important; top:136px !important; bottom:auto !important; right:auto !important; }
+.ref-scale .n160{ left:173px !important; top:183px !important; bottom:auto !important; right:auto !important; }
+
+/* Como a escala agora é RPM, deixamos o lado alto mais quente sem quebrar ordem. */
+.ref-scale .n100,
+.ref-scale .n120,
+.ref-scale .n140,
+.ref-scale .n160{
+  color:rgba(255,220,220,.94) !important;
+}
