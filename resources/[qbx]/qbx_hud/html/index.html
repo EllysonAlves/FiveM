@@ -309,19 +309,14 @@
             <div id="veh-container">
                 <div v-show="show" class="alves-vehicle-hud">
                     <div class="alves-speed-card">
-                        <div class="alves-speed-arc">
-                            <div class="alves-speed-value">{{ speed }}</div>
-                            <div class="alves-speed-unit">MPH</div>
+                        <div class="alves-speed-main">
+                            <span class="alves-speed-value">{{ speed }}</span>
+                            <span class="alves-speed-unit">MPH</span>
                         </div>
+                        <div class="alves-speed-bar"><div class="alves-speed-fill" :style="{ width: Math.min(100, (speed / 220) * 100) + '%' }"></div></div>
                         <div class="alves-speed-footer">
-                            <div class="alves-speed-pill">
-                                <span class="pill-label">FUEL</span>
-                                <span class="pill-value" :style="{ color: fuelColor }">{{ Math.round(fuel || 0) }}%</span>
-                            </div>
-                            <div class="alves-speed-pill" v-if="showSeatbelt">
-                                <span class="pill-label">BELT</span>
-                                <span class="pill-value" :style="{ color: seatbeltColor }">●</span>
-                            </div>
+                            <div class="alves-speed-pill"><span>FUEL</span><strong :style="{ color: fuelColor }">{{ Math.round(fuel || 0) }}%</strong></div>
+                            <div class="alves-speed-pill" v-if="showSeatbelt"><span>BELT</span><strong :style="{ color: seatbeltColor }">●</strong></div>
                         </div>
                     </div>
                     <div class="border">

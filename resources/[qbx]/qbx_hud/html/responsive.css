@@ -400,3 +400,12 @@
     font-size: 0.92vh !important;
   }
 }
+
+
+/* ALVES RACING SPEEDOMETER V3 RESPONSIVE */
+@media (min-width:1px){
+  .alves-vehicle-hud{
+    left:31.2vh !important;
+    bottom:5.8vh !important;
+  }
+}
