@@ -979,6 +979,18 @@ const vehHud = {
       if (this.rpm >= 70) return 'warning';
       return 'normal';
     },
+    speedPercent() {
+      return Math.max(0, Math.min(100, (Number(this.speed || 0) / 160) * 100));
+    },
+    fuelPercent() {
+      return Math.max(0, Math.min(100, Number(this.fuel || 0)));
+    },
+    beltText() {
+      return this.seatbelt === 1 ? 'ON' : 'OFF';
+    },
+    beltState() {
+      return this.seatbelt === 1 ? 'on' : 'off';
+    },
   },
   methods: {
     vehicleHud(data) {

@@ -869,3 +869,226 @@ speed:after{
   75%{ transform:translate(.6px,.6px) rotate(-.15deg); }
   100%{ transform:translate(0,0) rotate(0deg); }
 }
+
+
+/* ==================== ALVES RACING SPEEDOMETER V7 - REFERENCE REPLICA ==================== */
+.alves-ref-speedometer{
+  position:fixed !important;
+  right:3.0vh !important;
+  bottom:3.4vh !important;
+  left:auto !important;
+  z-index:42;
+  width:360px;
+  height:360px;
+  pointer-events:none;
+  font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.ref-gauge{
+  --purple:#9b4dff;
+  --purple2:#c084fc;
+  --speed-deg: calc((var(--speed, 0%) / 100) * 280deg);
+  position:relative;
+  width:360px;
+  height:360px;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at center, rgba(8,8,14,.54) 0 47%, rgba(8,8,14,.26) 48% 58%, transparent 59%),
+    conic-gradient(from 220deg, var(--purple) 0 var(--speed-deg), rgba(230,230,240,.20) var(--speed-deg) 280deg, transparent 280deg 360deg);
+  filter:drop-shadow(0 0 28px rgba(155,77,255,.38)) drop-shadow(0 16px 24px rgba(0,0,0,.48));
+}
+
+.ref-gauge::before{
+  content:"";
+  position:absolute;
+  inset:19px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.24);
+  background:
+    radial-gradient(circle at center, rgba(6,6,10,.18), rgba(6,6,10,.05) 54%, transparent 55%),
+    conic-gradient(from 220deg, rgba(255,255,255,.20) 0 280deg, transparent 280deg 360deg);
+  opacity:.95;
+}
+
+.ref-gauge::after{
+  content:"";
+  position:absolute;
+  inset:40px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(7,7,12,.34), rgba(7,7,12,.12));
+  border:1px solid rgba(255,255,255,.07);
+}
+
+.ref-scale{
+  position:absolute;
+  inset:0;
+  z-index:4;
+}
+
+.ref-scale .n{
+  position:absolute;
+  color:rgba(242,242,245,.86);
+  font-size:22px;
+  font-weight:900;
+  text-shadow:0 2px 6px rgba(0,0,0,.9), 0 0 10px rgba(155,77,255,.22);
+}
+
+.ref-scale .n0{ left:58px; bottom:106px; }
+.ref-scale .n20{ left:58px; top:130px; }
+.ref-scale .n40{ left:92px; top:72px; }
+.ref-scale .n60{ left:151px; top:43px; }
+.ref-scale .n80{ right:145px; top:43px; }
+.ref-scale .n100{ right:82px; top:75px; }
+.ref-scale .n120{ right:47px; top:133px; }
+.ref-scale .n140{ right:48px; bottom:108px; }
+.ref-scale .n160{ right:88px; bottom:58px; }
+
+.ref-needle{
+  position:absolute;
+  z-index:5;
+  left:180px;
+  top:180px;
+  width:122px;
+  height:4px;
+  transform-origin:left center;
+  transform:rotate(calc(220deg + var(--speed-deg)));
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(155,77,255,0), #c084fc 40%, #fff 100%);
+  box-shadow:0 0 16px rgba(192,132,252,.85);
+}
+
+.ref-center{
+  position:absolute;
+  z-index:6;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding-bottom:30px;
+}
+
+.ref-speed{
+  color:#f5f3ff;
+  font-size:108px;
+  line-height:.82;
+  font-weight:950;
+  letter-spacing:-5px;
+  text-shadow:0 0 24px rgba(255,255,255,.20), 0 3px 10px rgba(0,0,0,.90);
+}
+
+.ref-unit{
+  margin-top:18px;
+  color:#b45cff;
+  font-size:28px;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:7px;
+  text-shadow:0 0 14px rgba(180,92,255,.66);
+}
+
+.ref-bottom-panel{
+  position:absolute;
+  z-index:8;
+  left:50%;
+  bottom:16px;
+  transform:translateX(-50%);
+  width:220px;
+  min-height:88px;
+  border-radius:25px;
+  display:grid;
+  grid-template-columns:1fr 1px 1fr;
+  align-items:center;
+  padding:12px 14px;
+  background:rgba(8,8,13,.72);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 12px 28px rgba(0,0,0,.45), inset 0 0 24px rgba(155,77,255,.07);
+  backdrop-filter:blur(4px);
+}
+
+.ref-panel-divider{
+  height:58px;
+  background:rgba(255,255,255,.12);
+}
+
+.ref-panel-side{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  min-width:0;
+}
+
+.ref-icon{
+  color:#b45cff;
+  font-size:18px;
+  line-height:1;
+  filter:drop-shadow(0 0 8px rgba(180,92,255,.55));
+}
+
+.ref-label{
+  color:rgba(242,242,245,.72);
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:1.4px;
+}
+
+.ref-value{
+  color:#b45cff;
+  font-size:24px;
+  line-height:1;
+  font-weight:950;
+  text-shadow:0 0 12px rgba(180,92,255,.42);
+}
+
+.ref-mini-bar{
+  width:58px;
+  height:6px;
+  margin-top:5px;
+  border-radius:999px;
+  overflow:hidden;
+  background:rgba(255,255,255,.15);
+}
+
+.ref-mini-bar div{
+  width:var(--fuel, 0%);
+  height:100%;
+  border-radius:999px;
+  background:#b45cff;
+  box-shadow:0 0 10px rgba(180,92,255,.72);
+}
+
+.ref-panel-side.belt.off .ref-value,
+.ref-panel-side.belt.off .ref-icon{
+  color:#ef4444;
+  text-shadow:0 0 10px rgba(239,68,68,.5);
+}
+
+.ref-gauge.warning{
+  --purple:#fbbf24;
+  --purple2:#fde68a;
+}
+
+.ref-gauge.redline{
+  --purple:#ef4444;
+  --purple2:#fca5a5;
+  animation:refRedlineShake .08s infinite linear;
+}
+
+@keyframes refRedlineShake{
+  0%{ transform:translate(0,0) rotate(0deg); }
+  25%{ transform:translate(1px,-1px) rotate(-.25deg); }
+  50%{ transform:translate(-1px,1px) rotate(.25deg); }
+  75%{ transform:translate(.8px,.8px) rotate(-.15deg); }
+  100%{ transform:translate(0,0) rotate(0deg); }
+}
+
+@media(max-width:1600px){
+  .alves-ref-speedometer{
+    transform:scale(.82);
+    transform-origin:right bottom;
+    right:2.4vh !important;
+    bottom:2.8vh !important;
+  }
+}

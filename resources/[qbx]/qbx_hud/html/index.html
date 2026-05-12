@@ -307,24 +307,38 @@
                 </div>
             </div>
             <div id="veh-container">
-                <div v-show="show" class="alves-vehicle-hud">
-                    <div class="alves-speed-card">
-                        <div class="alves-gauge-shell" :class="rpmLevel" :style="{ '--rpm-deg': ((Math.min(100, rpm || 0) / 100) * 270) + 'deg' }">
-                            <div class="alves-gauge-center">
-                                <span class="alves-speed-value">{{ speed }}</span>
-                                <span class="alves-speed-unit">MPH</span>
+                <div v-show="show" class="alves-vehicle-hud alves-ref-speedometer">
+                    <div class="ref-gauge" :class="rpmLevel" :style="{ '--speed': speedPercent + '%', '--fuel': fuelPercent + '%' }">
+                        <div class="ref-scale">
+                            <span class="n n0">0</span>
+                            <span class="n n20">20</span>
+                            <span class="n n40">40</span>
+                            <span class="n n60">60</span>
+                            <span class="n n80">80</span>
+                            <span class="n n100">100</span>
+                            <span class="n n120">120</span>
+                            <span class="n n140">140</span>
+                            <span class="n n160">160</span>
+                        </div>
+                        <div class="ref-needle"></div>
+                        <div class="ref-center">
+                            <div class="ref-speed">{{ speed }}</div>
+                            <div class="ref-unit">MPH</div>
+                        </div>
+                        <div class="ref-bottom-panel">
+                            <div class="ref-panel-side fuel">
+                                <div class="ref-icon">⛽</div>
+                                <div class="ref-label">FUEL</div>
+                                <div class="ref-value">{{ Math.round(fuelPercent) }}%</div>
+                                <div class="ref-mini-bar"><div></div></div>
+                            </div>
+                            <div class="ref-panel-divider"></div>
+                            <div class="ref-panel-side belt" :class="beltState">
+                                <div class="ref-icon">◉</div>
+                                <div class="ref-label">BELT</div>
+                                <div class="ref-value">{{ beltText }}</div>
                             </div>
                         </div>
-                        <div class="alves-speed-footer">
-                            <div class="alves-speed-pill"><span>FUEL</span><strong :style="{ color: fuelColor }">{{ Math.round(fuel || 0) }}%</strong></div>
-                            <div class="alves-speed-pill" v-if="showSeatbelt"><span>BELT</span><strong :style="{ color: seatbeltColor }">●</strong></div>
-                        </div>
-                    </div>
-                    <div class="border">
-                        <div class="square" v-if="showSquare"></div>
-                    </div>
-                    <div class="border">
-                        <div class="circle" v-if="showCircle"></div>
                     </div>
                 </div>
             </div>
