@@ -291,10 +291,133 @@ function applyFullTuning(vehicle)
     SetVehiclePetrolTankHealth(vehicle, 1000.0)
 end
 
+function startRaceSession(result)
+    if not result then
+        lib.notify({ type = 'error', description = 'Erro ao iniciar corrida' })
+        return
+    end
+
+    local raceType = result.raceType or 'casual'
+    local ped = PlayerPedId()
+    local currentVehicle = GetVehiclePedIsIn(ped, false)
+    if DoesEntityExist(currentVehicle) then
+        DeleteEntity(currentVehicle)
+    end
+
+    DoScreenFadeOut(500)
+    while not IsScreenFadedOut() do Wait(0) end
+
+    local startCoords = result.startCoords
+    local spawnIndex = result.spawnIndex or 1
+    local heading = startCoords.h or 0.0
+    if (not startCoords.h) and result.checkpoints and result.checkpoints[2] then
+        local nextCoords = result.checkpoints[2].coords
+        heading = GetHeadingFromVector_2d(nextCoords.x - startCoords.x, nextCoords.y - startCoords.y)
+    end
+
+    -- Pequeno grid lateral para evitar jogadores nascendo um dentro do outro.
+    local gridOffset = (spawnIndex - 1) * 4.2
+    local lateralRad = math.rad(heading + 90.0)
+    local spawnX = startCoords.x + math.sin(lateralRad) * gridOffset
+    local spawnY = startCoords.y + math.cos(lateralRad) * gridOffset
+    local spawnZ = startCoords.z + 1.0
+
+    SetEntityCoords(ped, spawnX, spawnY, spawnZ, false, false, false, false)
+    SetEntityHeading(ped, heading)
+
+    local model = GetHashKey(result.vehicleModel)
+    RequestModel(model)
+    while not HasModelLoaded(model) do Wait(10) end
+
+    local veh = CreateVehicle(model, spawnX, spawnY, startCoords.z + 0.5, heading, true, false)
+    SetVehicleOnGroundProperly(veh)
+    SetPedIntoVehicle(ped, veh, -1)
+    SetVehicleEngineOn(veh, true, true, false)
+    SetModelAsNoLongerNeeded(model)
+
+    applyFullTuning(veh)
+
+    -- CONGELAR VEÍCULO durante contagem
+    FreezeEntityPosition(veh, true)
+    SetVehicleBrake(veh, true)
+    SetEntityInvincible(veh, true)
+
+    DoScreenFadeIn(500)
+
+    CurrentRaceData = {
+        RaceId = result.raceId,
+        RaceName = result.trackName,
+        RaceType = raceType,
+        Checkpoints = result.checkpoints,
+        TotalLaps = result.laps,
+        CurrentCheckpoint = 1,
+        Lap = 1,
+        Started = false,
+        RaceTime = 0,
+        TotalTime = 0,
+        BestLap = 0,
+        TotalRacers = result.totalRacers or Config.DefaultTotalRacers,
+        Vehicle = veh
+    }
+
+    inRace = true
+
+    local typeText = raceType == 'ranked' and 'RANKED' or 'CASUAL'
+    lib.notify({ type = 'success', description = string.format('Pista: %s (%s) | Carro: %s', result.trackName, typeText, result.vehicleModel) })
+
+    setupBlipsForRace()
+
+    SendNUIMessage({ action = 'hideLobby' })
+    SendNUIMessage({
+        action = 'updateRaceHUD',
+        data = {
+            position = 1,
+            totalRacers = result.totalRacers or Config.DefaultTotalRacers,
+            lap = CurrentRaceData.Lap,
+            totalLaps = CurrentRaceData.TotalLaps,
+            checkpoint = CurrentRaceData.CurrentCheckpoint,
+            totalCheckpoints = #CurrentRaceData.Checkpoints,
+            bestLap = 0
+        }
+    })
+
+    Wait(1000)
+    SendNUIMessage({ action = 'startCountdown', seconds = 5 })
+
+    Wait(5000)
+
+    FreezeEntityPosition(veh, false)
+    SetVehicleBrake(veh, false)
+
+    CurrentRaceData.Started = true
+    startTime = GetGameTimer()
+    lapStartTime = GetGameTimer()
+
+    initRacingHudThread()
+    markWithDrawTextWaypoint()
+end
+
+RegisterNetEvent('alves-racingapp:client:updateLobby', function(data)
+    SendNUIMessage({ action = 'showLobby', data = data })
+end)
+
+RegisterNetEvent('alves-racingapp:client:startLobbyRace', function(result)
+    SetNuiFocus(false, false)
+    CreateThread(function()
+        startRaceSession(result)
+    end)
+end)
+
 -- ==================== NUI CALLBACKS ====================
 RegisterNUICallback('closeTablet', function(_, cb)
     SetNuiFocus(false, false)
     cb('ok')
+end)
+
+RegisterNUICallback('leaveLobby', function(_, cb)
+    cb('ok')
+    TriggerServerEvent('alves-racingapp:server:leaveRace')
+    lib.notify({ type = 'inform', description = 'Você saiu do lobby' })
 end)
 
 RegisterNUICallback('startRace', function(data, cb)
@@ -307,101 +430,26 @@ RegisterNUICallback('startRace', function(data, cb)
         return
     end
     
-    lib.notify({ type = 'inform', description = 'Preparando corrida...' })
+    lib.notify({ type = 'inform', description = 'Entrando no lobby...' })
     
     CreateThread(function()
-        local result = lib.callback.await('alves-racingapp:server:startQuickRace', false, raceType)
+        local lobby = lib.callback.await('alves-racingapp:server:startQuickRace', false, raceType)
         
-        if not result then
-            lib.notify({ type = 'error', description = 'Erro ao iniciar corrida' })
+        if not lobby then
+            lib.notify({ type = 'error', description = 'Erro ao entrar no lobby' })
             return
         end
-        
-        local ped = PlayerPedId()
-        local currentVehicle = GetVehiclePedIsIn(ped, false)
-        if DoesEntityExist(currentVehicle) then
-            DeleteEntity(currentVehicle)
+        SendNUIMessage({ action = 'showLobby', data = lobby })
+    end)
+end)
+
+RegisterNUICallback('lobbyVote', function(data, cb)
+    cb('ok')
+    CreateThread(function()
+        local lobby = lib.callback.await('alves-racingapp:server:voteLobby', false, data or {})
+        if lobby then
+            SendNUIMessage({ action = 'showLobby', data = lobby })
         end
-        
-        DoScreenFadeOut(500)
-        while not IsScreenFadedOut() do Wait(0) end
-        
-        SetEntityCoords(ped, result.startCoords.x, result.startCoords.y, result.startCoords.z + 1.0, false, false, false, false)
-        SetEntityHeading(ped, result.startCoords.h or 0.0)
-        
-        local model = GetHashKey(result.vehicleModel)
-        RequestModel(model)
-        while not HasModelLoaded(model) do Wait(10) end
-        
-        local veh = CreateVehicle(model, result.startCoords.x, result.startCoords.y, result.startCoords.z + 0.5, result.startCoords.h or 0.0, true, false)
-        SetVehicleOnGroundProperly(veh)
-        SetPedIntoVehicle(ped, veh, -1)
-        SetVehicleEngineOn(veh, true, true, false)
-        SetModelAsNoLongerNeeded(model)
-        
-        applyFullTuning(veh)
-        
-        -- CONGELAR VEÍCULO durante contagem
-        FreezeEntityPosition(veh, true)
-        SetVehicleBrake(veh, true)
-        SetEntityInvincible(veh, true)
-        
-        DoScreenFadeIn(500)
-        
-        CurrentRaceData = {
-            RaceId = result.raceId,
-            RaceName = result.trackName,
-            RaceType = raceType,
-            Checkpoints = result.checkpoints,
-            TotalLaps = result.laps,
-            CurrentCheckpoint = 1,
-            Lap = 1,
-            Started = false,
-            RaceTime = 0,
-            TotalTime = 0,
-            BestLap = 0,
-            TotalRacers = result.totalRacers or Config.DefaultTotalRacers,
-            Vehicle = veh
-        }
-        
-        inRace = true
-        
-        local typeText = raceType == 'ranked' and 'RANKED' or 'CASUAL'
-        lib.notify({ type = 'success', description = string.format('Pista: %s (%s)', result.trackName, typeText) })
-        
-        setupBlipsForRace()
-        
-        SendNUIMessage({
-            action = 'updateRaceHUD',
-            data = {
-                position = 1,
-                totalRacers = result.totalRacers or Config.DefaultTotalRacers,
-                lap = CurrentRaceData.Lap,
-                totalLaps = CurrentRaceData.TotalLaps,
-                checkpoint = CurrentRaceData.CurrentCheckpoint,
-                totalCheckpoints = #CurrentRaceData.Checkpoints,
-                bestLap = 0
-            }
-        })
-        
-        Wait(1000)
-        SendNUIMessage({
-            action = 'startCountdown',
-            seconds = 5
-        })
-        
-        Wait(5000)
-        
-        -- DESCONGELAR VEÍCULO após contagem
-        FreezeEntityPosition(veh, false)
-        SetVehicleBrake(veh, false)
-        
-        CurrentRaceData.Started = true
-        startTime = GetGameTimer()
-        lapStartTime = GetGameTimer()
-        
-        initRacingHudThread()
-        markWithDrawTextWaypoint()
     end)
 end)
 
