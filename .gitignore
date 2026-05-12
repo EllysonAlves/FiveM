@@ -1,0 +1,71 @@
+# FiveM / Qbox - arquivos locais e pesados
+
+.server.cfg.example
+
+# Cache/runtime
+cache/
+server-cache/
+server-cache-priv/
+crashes/
+logs/
+*.log
+
+# txAdmin / runtime local
+txData/
+monitor/
+*.pid
+
+# Banco / dumps
+*.sql
+*.sqlite
+*.db
+*.dump
+
+# Segredos/configs sensíveis
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.crt
+
+# Configs reais com chaves
+server.cfg
+permissions.cfg
+
+# Mantém exemplos seguros
+!server.cfg.example
+!permissions.cfg.example
+
+# Node/deps/build
+node_modules/
+dist/
+build/
+.npm/
+.yarn/
+
+# Sistema operacional/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Arquivos compactados
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# Assets pesados opcionais
+# Descomente se não quiser subir carros/mapas/sons
+# resources/[assets]/
+# resources/[cars]/
+# resources/[vehicles]/
+# resources/[sounds]/
+# resources/[maps]/
+
+# FiveM artifacts/binários temporários
+*.tmp
+*.bak
+*.backup

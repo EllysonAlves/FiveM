@@ -1,0 +1,3 @@
+sv_licenseKey "cfxk_Rw3jjlZhGgt0Jye9hc8T_013sHp"
+set steam_webApiKey "F643745B5AAC3294B5B70DDF98932388"
+set mysql_connection_string "mysql://root@localhost/Qbox_F52520?charset=utf8mb4"
