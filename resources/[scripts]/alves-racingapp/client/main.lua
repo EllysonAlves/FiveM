@@ -16,7 +16,7 @@ Config.CheckpointBuffer = Config.CheckpointBuffer or 5.0
 Config.MarkAmountOfCheckpointsAhead = Config.CheckpointsAhead or Config.MarkAmountOfCheckpointsAhead or 3
 Config.ShowGpsRoute = Config.ShowGpsRoute ~= false
 Config.UseRoadsForGps = Config.UseRoadsForGps ~= false
-Config.GpsColor = Config.GpsColor or 6
+Config.GpsColor = Config.GpsColor or 83
 Config.BlipColor = Config.BlipColor or 85
 Config.DefaultTotalRacers = Config.DefaultTotalRacers or 1
 Config.DrawTextSetup = Config.DrawTextSetup or {

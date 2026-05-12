@@ -371,3 +371,32 @@
 	  bottom: 6.9%!important;
   }
 }
+
+/* ==================== ALVES RACING SPEEDOMETER RESPONSIVE OVERRIDE ==================== */
+@media (min-width: 1px) {
+  #veh-container #speedometer.responsive,
+  #veh-container #speedometer {
+    margin-left: 0 !important;
+    position: relative !important;
+    left: 31vh !important;
+    bottom: 7.2vh !important;
+    transform: scale(1.16) !important;
+  }
+
+  #veh-container #fuelgauge.responsive,
+  #veh-container #fuelgauge {
+    margin-left: 0 !important;
+    position: relative !important;
+    left: 39.5vh !important;
+    bottom: 10.5vh !important;
+    transform: scale(1.04) !important;
+  }
+
+  #veh-container speed {
+    font-size: 2.7vh !important;
+  }
+
+  #veh-container speed:after {
+    font-size: 0.92vh !important;
+  }
+}

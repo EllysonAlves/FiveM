@@ -170,13 +170,13 @@ function startCountdown(seconds) {
 function updateRaceHUD(data) {
     const d = data || {};
     if (d.position !== undefined) {
-        setHtml('#race-position', d.totalRacers !== undefined ? `${d.position}º <span class="stat-total">/ ${d.totalRacers}</span>` : `${d.position}º`);
+        setHtml('#race-position', d.totalRacers !== undefined ? `<span class="race-value-accent">${d.position}º</span> <span class="stat-total">/ ${d.totalRacers}</span>` : `<span class="race-value-accent">${d.position}º</span>`);
     }
     if (d.lap !== undefined) {
         setHtml('#race-lap', d.totalLaps !== undefined ? `${d.lap} <span class="stat-total">/ ${d.totalLaps}</span>` : `${d.lap}`);
     }
     if (d.checkpoint !== undefined) {
-        setHtml('#race-checkpoint', d.totalCheckpoints !== undefined ? `${d.checkpoint} <span class="stat-total">/ ${d.totalCheckpoints}</span>` : `${d.checkpoint}`);
+        setHtml('#race-checkpoint', d.totalCheckpoints !== undefined ? `<span class="race-value-accent">${d.checkpoint}</span> <span class="stat-total">/ ${d.totalCheckpoints}</span>` : `<span class="race-value-accent">${d.checkpoint}</span>`);
     }
     if (d.bestLap !== undefined) setText('#race-best-lap', d.bestLap === 0 ? '--:--.---' : formatTime(d.bestLap));
     if (d.time !== undefined) setText('#race-time', formatTime(d.time));

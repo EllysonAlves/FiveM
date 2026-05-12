@@ -1356,3 +1356,90 @@ body::after{
 }
 
 /* O velocímetro oficial fica no qbx_hud/cw-vehicledash. O racing app não renderiza outro. */
+
+
+/* ==================== RACE HUD V2 - referência modular ==================== */
+.race-hud{
+    top:34px;
+    right:34px;
+    width:286px;
+    background:transparent;
+    border:none;
+    box-shadow:none;
+    overflow:visible;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.race-header{
+    padding:16px 18px 14px;
+    text-align:left;
+    border:1px solid rgba(168,85,247,.32);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(12,12,18,.88), rgba(7,8,13,.82));
+    box-shadow:0 14px 34px rgba(0,0,0,.35), 0 0 24px rgba(139,92,246,.14);
+}
+
+.race-title{
+    font-size:22px;
+    letter-spacing:1.1px;
+    font-weight:900;
+    font-style:italic;
+    text-shadow:0 0 14px rgba(168,85,247,.25);
+}
+
+.race-subtitle{
+    margin-top:3px;
+    color:#a855f7;
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:1.6px;
+    text-transform:uppercase;
+}
+
+.race-divider{ display:none; }
+
+.race-stats{
+    padding:0;
+    gap:8px;
+}
+
+.race-stats .stat-row{
+    min-height:50px;
+    padding:10px 14px;
+    border-radius:15px;
+    background:linear-gradient(180deg, rgba(12,12,18,.82), rgba(5,7,12,.78));
+    border:1px solid rgba(255,255,255,.075);
+    box-shadow:0 10px 24px rgba(0,0,0,.28);
+}
+
+.race-stats .stat-label{
+    color:rgba(255,255,255,.58);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:1.1px;
+}
+
+.race-stats .stat-value{
+    color:#fff;
+    font-size:22px;
+    font-weight:900;
+    letter-spacing:.3px;
+    font-variant-numeric:tabular-nums;
+}
+
+.race-value-accent{
+    color:#a855f7;
+    text-shadow:0 0 12px rgba(168,85,247,.42);
+}
+
+.race-stats .stat-total{
+    color:rgba(255,255,255,.70);
+    font-size:16px;
+    font-weight:800;
+}
+
+#race-time{
+    font-size:24px;
+}
