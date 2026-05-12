@@ -244,6 +244,53 @@
         </div>
     </div>
 
+    <!-- MODAL LOBBY / FILA -->
+    <div id="modal-lobby" class="modal hidden">
+        <div class="modal-content lobby-modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span class="ui-icon">🏁</span>
+                    <h2 id="lobby-title">LOBBY</h2>
+                </div>
+                <div class="lobby-header-stats">
+                    <span><strong id="lobby-players-count">0</strong> pilotos</span>
+                    <span class="lobby-timer" id="lobby-timer">60s</span>
+                    <button class="modal-close" onclick="leaveLobby()">
+                        <span class="ui-icon">×</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body lobby-body">
+                <div class="lobby-topline">
+                    <div>
+                        <h3>Votação aberta</h3>
+                        <p>O timer reinicia quando outro piloto entra. Ao zerar, a corrida começa automaticamente.</p>
+                    </div>
+                    <div class="lobby-pill">Sem votos = aleatório</div>
+                </div>
+
+                <div class="lobby-grid">
+                    <section class="lobby-section">
+                        <h3>Escolha do mapa</h3>
+                        <p>O mapa mais votado será usado por todos.</p>
+                        <div id="lobby-map-options" class="lobby-options"></div>
+                    </section>
+
+                    <section class="lobby-section">
+                        <h3>Escolha do carro</h3>
+                        <p>Cada piloto usa o carro que escolheu.</p>
+                        <div id="lobby-car-options" class="lobby-options"></div>
+                    </section>
+
+                    <section class="lobby-section lobby-players-section">
+                        <h3>Pilotos na fila</h3>
+                        <div id="lobby-player-list" class="lobby-player-list"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- COUNTDOWN (SEPARADO DO HUD) -->
     <div id="countdown" class="countdown hidden">
         <span id="countdown-number">5</span>

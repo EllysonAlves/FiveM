@@ -3,6 +3,8 @@
 let raceStartTime = 0;
 let timerInterval = null;
 let countdownInterval = null;
+let lobbyInterval = null;
+let currentLobby = null;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -48,6 +50,8 @@ window.addEventListener('message', function(event) {
         case 'showScoreboard': displayScoreboard(data.data || {}); break;
         case 'showRanking': displayRanking(data.data || {}); break;
         case 'showProfile': displayProfile(data.data || {}); break;
+        case 'showLobby': displayLobby(data.data || {}); break;
+        case 'hideLobby': hideLobby(); break;
     }
 });
 
@@ -104,7 +108,85 @@ function displayInfoModal(title, message) {
 
 function startRace(type) {
     nuiPost('startRace', { raceType: type });
-    closeTablet();
+}
+
+function hideLobby() {
+    addClass('#modal-lobby', 'hidden');
+    currentLobby = null;
+    if (lobbyInterval) {
+        clearInterval(lobbyInterval);
+        lobbyInterval = null;
+    }
+}
+
+function leaveLobby() {
+    nuiPost('leaveLobby');
+    hideLobby();
+}
+
+function voteMap(mapId) {
+    if (!currentLobby) return;
+    nuiPost('lobbyVote', { raceType: currentLobby.raceType, mapId });
+}
+
+function voteCar(vehicleModel) {
+    if (!currentLobby) return;
+    nuiPost('lobbyVote', { raceType: currentLobby.raceType, vehicleModel });
+}
+
+function displayLobby(data) {
+    currentLobby = data || {};
+    $$('.modal').forEach(m => m.classList.add('hidden'));
+    removeClass('#modal-lobby', 'hidden');
+
+    const typeText = currentLobby.raceType === 'ranked' ? 'RANQUEADA' : 'CASUAL';
+    setText('#lobby-title', `LOBBY ${typeText}`);
+    setText('#lobby-players-count', currentLobby.playerCount || 0);
+
+    const renderTimer = () => {
+        const remaining = Math.max(0, (currentLobby.endsAt || 0) - Math.floor(Date.now() / 1000));
+        setText('#lobby-timer', `${remaining}s`);
+    };
+    renderTimer();
+    if (lobbyInterval) clearInterval(lobbyInterval);
+    lobbyInterval = setInterval(renderTimer, 250);
+
+    const mapVotes = currentLobby.mapVotes || {};
+    const carVotes = currentLobby.carVotes || {};
+    const players = currentLobby.players || [];
+
+    const mapHtml = (currentLobby.mapOptions || []).map((map, index) => {
+        const votes = mapVotes[String(map.id)] || 0;
+        const distance = map.distance ? `${(Number(map.distance) / 1000).toFixed(1)} km` : 'distância dinâmica';
+        return `
+            <button class="lobby-option map-option" onclick="voteMap('${String(map.id).replace(/'/g, "\\'")}')">
+                <span class="option-index">MAPA ${index + 1}</span>
+                <strong>${map.name || 'Pista desconhecida'}</strong>
+                <small>${distance}</small>
+                <span class="option-votes">${votes} voto${votes === 1 ? '' : 's'}</span>
+            </button>`;
+    }).join('');
+
+    const carHtml = (currentLobby.vehicleOptions || []).map((vehicle, index) => {
+        const votes = carVotes[vehicle] || 0;
+        return `
+            <button class="lobby-option car-option" onclick="voteCar('${String(vehicle).replace(/'/g, "\\'")}')">
+                <span class="option-index">CARRO ${index + 1}</span>
+                <strong>${vehicle}</strong>
+                <small>Escolha individual</small>
+                <span class="option-votes">${votes} escolhido${votes === 1 ? '' : 's'}</span>
+            </button>`;
+    }).join('');
+
+    setHtml('#lobby-map-options', mapHtml || '<p class="lobby-empty">Nenhum mapa disponível</p>');
+    setHtml('#lobby-car-options', carHtml || '<p class="lobby-empty">Nenhum carro disponível</p>');
+
+    const playerHtml = players.map(player => `
+        <div class="lobby-player">
+            <span>${player.name || 'Piloto'}</span>
+            <small>${player.mapVote ? 'mapa votado' : 'sem mapa'} • ${player.vehicleVote || 'carro aleatório'}</small>
+        </div>`).join('');
+    setHtml('#lobby-player-list', playerHtml || '<div class="lobby-player"><span>Aguardando pilotos...</span></div>');
 }
 
 function showScoreboard() {

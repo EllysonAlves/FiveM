@@ -22,6 +22,11 @@ Config.MaxRaceTimeMs = 60 * 60 * 1000
 
 Config.RankedCompletionElo = 20
 
+-- Lobby/fila de corrida rápida.
+Config.LobbyCountdownSeconds = 60
+Config.LobbyMapOptions = 3
+Config.LobbyVehicleOptions = 3
+
 -- Voltas automáticas por distância da pista no banco.
 Config.LapsByDistance = {
     { minDistance = 15000, laps = 3 },
