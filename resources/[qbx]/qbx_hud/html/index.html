@@ -309,6 +309,8 @@
             <div id="veh-container">
                 <div v-show="show" class="alves-vehicle-hud alves-ref-speedometer">
                     <div class="ref-gauge" :class="rpmLevel" :style="{ '--speed': speedPercent + '%', '--fuel': fuelPercent + '%' }">
+                        <div class="ref-ring"></div>
+                        <div class="ref-ticks"></div>
                         <div class="ref-scale">
                             <span class="n n0">0</span>
                             <span class="n n20">20</span>
@@ -334,7 +336,7 @@
                             </div>
                             <div class="ref-panel-divider"></div>
                             <div class="ref-panel-side belt" :class="beltState">
-                                <div class="ref-icon">◉</div>
+                                <div class="ref-icon">●</div>
                                 <div class="ref-label">BELT</div>
                                 <div class="ref-value">{{ beltText }}</div>
                             </div>

@@ -1092,3 +1092,218 @@ speed:after{
     bottom:2.8vh !important;
   }
 }
+
+
+/* ==================== ALVES RACING SPEEDOMETER V8 - FINAL REFERENCE FIT ==================== */
+.alves-ref-speedometer{
+  position:fixed !important;
+  right:3.0vh !important;
+  bottom:3.0vh !important;
+  left:auto !important;
+  z-index:42;
+  width:246px !important;
+  height:246px !important;
+  transform:none !important;
+  transform-origin:right bottom;
+  pointer-events:none;
+  font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.ref-gauge{
+  --purple:#9b4dff;
+  --purple2:#c084fc;
+  --speed-deg: calc((var(--speed, 0%) / 100) * 276deg);
+  position:relative;
+  width:246px !important;
+  height:246px !important;
+  border-radius:50%;
+  background:transparent !important;
+  filter:drop-shadow(0 0 16px rgba(155,77,255,.30)) drop-shadow(0 10px 18px rgba(0,0,0,.38));
+  animation:none;
+}
+
+.ref-gauge::before,
+.ref-gauge::after{
+  display:none !important;
+}
+
+.ref-ring{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at center, rgba(5,5,10,0) 0 49%, rgba(8,8,14,.30) 50% 60%, transparent 61%),
+    conic-gradient(from 222deg, var(--purple) 0 var(--speed-deg), rgba(235,235,245,.22) var(--speed-deg) 276deg, transparent 276deg 360deg);
+  -webkit-mask:radial-gradient(circle, transparent 0 58%, #000 59% 70%, transparent 71%);
+  mask:radial-gradient(circle, transparent 0 58%, #000 59% 70%, transparent 71%);
+  box-shadow:0 0 22px rgba(155,77,255,.30);
+}
+
+.ref-ring::after{
+  content:"";
+  position:absolute;
+  inset:18px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.20);
+}
+
+.ref-ticks{
+  position:absolute;
+  inset:22px;
+  border-radius:50%;
+  background:repeating-conic-gradient(from 222deg, rgba(245,245,255,.60) 0deg 1deg, transparent 1deg 9deg);
+  -webkit-mask:radial-gradient(circle, transparent 0 76%, #000 77% 82%, transparent 83%);
+  mask:radial-gradient(circle, transparent 0 76%, #000 77% 82%, transparent 83%);
+  opacity:.55;
+}
+
+.ref-scale .n{
+  position:absolute;
+  color:rgba(242,242,245,.86) !important;
+  font-size:14px !important;
+  font-weight:900 !important;
+  line-height:1;
+  text-shadow:0 2px 5px rgba(0,0,0,.9), 0 0 8px rgba(155,77,255,.16);
+}
+
+.ref-scale .n0{ left:37px; bottom:84px; }
+.ref-scale .n20{ left:36px; top:101px; }
+.ref-scale .n40{ left:61px; top:57px; }
+.ref-scale .n60{ left:105px; top:35px; }
+.ref-scale .n80{ right:104px; top:35px; }
+.ref-scale .n100{ right:55px; top:58px; }
+.ref-scale .n120{ right:31px; top:103px; }
+.ref-scale .n140{ right:32px; bottom:84px; }
+.ref-scale .n160{ right:60px; bottom:48px; }
+
+.ref-needle{
+  position:absolute;
+  z-index:5;
+  left:123px;
+  top:123px;
+  width:76px;
+  height:3px;
+  transform-origin:left center;
+  transform:rotate(calc(222deg + var(--speed-deg)));
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(155,77,255,0), #b45cff 45%, #fff 100%);
+  box-shadow:0 0 12px rgba(180,92,255,.80);
+}
+
+.ref-center{
+  position:absolute;
+  z-index:6;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding-bottom:20px;
+}
+
+.ref-speed{
+  color:#f5f3ff !important;
+  font-size:72px !important;
+  line-height:.82;
+  font-weight:950;
+  letter-spacing:-3px;
+  text-shadow:0 0 18px rgba(255,255,255,.18), 0 3px 8px rgba(0,0,0,.88);
+}
+
+.ref-unit{
+  margin-top:13px;
+  color:#b45cff !important;
+  font-size:18px !important;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:5px;
+  text-shadow:0 0 10px rgba(180,92,255,.62);
+}
+
+.ref-bottom-panel{
+  position:absolute;
+  z-index:8;
+  left:50%;
+  bottom:9px;
+  transform:translateX(-50%);
+  width:148px;
+  min-height:58px;
+  border-radius:18px;
+  display:grid;
+  grid-template-columns:1fr 1px 1fr;
+  align-items:center;
+  padding:8px 10px;
+  background:rgba(8,8,13,.62);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 9px 20px rgba(0,0,0,.40), inset 0 0 18px rgba(155,77,255,.055);
+  backdrop-filter:blur(3px);
+}
+
+.ref-panel-divider{
+  height:40px;
+  background:rgba(255,255,255,.13);
+}
+
+.ref-panel-side{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+}
+
+.ref-icon{
+  color:#b45cff !important;
+  font-size:12px !important;
+  line-height:1;
+  filter:drop-shadow(0 0 6px rgba(180,92,255,.55));
+}
+
+.ref-label{
+  color:rgba(242,242,245,.72) !important;
+  font-size:7.5px !important;
+  font-weight:950;
+  letter-spacing:1px;
+}
+
+.ref-value{
+  color:#b45cff !important;
+  font-size:15px !important;
+  line-height:1;
+  font-weight:950;
+  text-shadow:0 0 8px rgba(180,92,255,.42);
+}
+
+.ref-mini-bar{
+  width:36px;
+  height:4px;
+  margin-top:3px;
+  border-radius:999px;
+  overflow:hidden;
+  background:rgba(255,255,255,.15);
+}
+
+.ref-mini-bar div{
+  width:var(--fuel, 0%);
+  height:100%;
+  border-radius:999px;
+  background:#b45cff;
+  box-shadow:0 0 8px rgba(180,92,255,.72);
+}
+
+.ref-panel-side.belt.off .ref-value,
+.ref-panel-side.belt.off .ref-icon{
+  color:#ef4444 !important;
+  text-shadow:0 0 8px rgba(239,68,68,.5);
+}
+
+.ref-gauge.warning{ --purple:#fbbf24; --purple2:#fde68a; }
+.ref-gauge.redline{ --purple:#ef4444; --purple2:#fca5a5; animation:refRedlineShake .08s infinite linear; }
+
+@media(max-width:1600px){
+  .alves-ref-speedometer{
+    transform:scale(.92) !important;
+    right:2.6vh !important;
+    bottom:2.6vh !important;
+  }
+}
