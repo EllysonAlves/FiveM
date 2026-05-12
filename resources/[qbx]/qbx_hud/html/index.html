@@ -308,15 +308,14 @@
             </div>
             <div id="veh-container">
                 <div v-show="show" class="alves-vehicle-hud">
-                    <div class="alves-speed-card" :class="rpmLevel">
-                        <div class="alves-gauge-shell" :class="rpmLevel" :style="{ '--rpm': Math.min(100, rpm || 0) + '%' }">
+                    <div class="alves-speed-card">
+                        <div class="alves-gauge-shell" :class="rpmLevel" :style="{ '--rpm-deg': ((Math.min(100, rpm || 0) / 100) * 270) + 'deg' }">
                             <div class="alves-gauge-center">
                                 <span class="alves-speed-value">{{ speed }}</span>
                                 <span class="alves-speed-unit">MPH</span>
                             </div>
                         </div>
                         <div class="alves-speed-footer">
-                            <div class="alves-speed-pill"><span>RPM</span><strong>{{ rpm || 0 }}%</strong></div>
                             <div class="alves-speed-pill"><span>FUEL</span><strong :style="{ color: fuelColor }">{{ Math.round(fuel || 0) }}%</strong></div>
                             <div class="alves-speed-pill" v-if="showSeatbelt"><span>BELT</span><strong :style="{ color: seatbeltColor }">●</strong></div>
                         </div>

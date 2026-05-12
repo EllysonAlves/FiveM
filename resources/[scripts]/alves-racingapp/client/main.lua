@@ -154,7 +154,10 @@ function updateGpsForRace()
         StartGpsCustomRoute(Config.GpsColor, true, true)
     end
     
-    local currentCheckpoint = CurrentRaceData.CurrentCheckpoint or 1
+    -- CurrentCheckpoint representa o último checkpoint já alcançado.
+    -- A rota precisa começar no PRÓXIMO checkpoint, senão o GPS tenta voltar para trás
+    -- e fica com traçado estranho entre os pontos.
+    local currentCheckpoint = (CurrentRaceData.CurrentCheckpoint or 0) + 1
     local lastCheckpoint = currentCheckpoint + Config.MarkAmountOfCheckpointsAhead - 1
     local totalCheckpoints = #CurrentRaceData.Checkpoints
     local isCircuit = CurrentRaceData.TotalLaps > 0

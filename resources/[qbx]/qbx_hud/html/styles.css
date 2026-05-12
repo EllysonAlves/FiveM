@@ -810,3 +810,62 @@ speed:after{
   75%{ transform:translate(1px,1px) rotate(-.2deg); }
   100%{ transform:translate(0,0) rotate(0deg); }
 }
+
+
+/* ==================== ALVES RACING SPEEDOMETER V6 - RPM ARC ONLY ==================== */
+.alves-speed-card,
+.alves-speed-card.warning,
+.alves-speed-card.redline{
+  animation:none !important;
+  filter:none !important;
+}
+
+.alves-gauge-shell{
+  --rpm-color:#a855f7;
+  background:
+    radial-gradient(circle at center, rgba(8,9,15,.18) 0 48%, transparent 49%),
+    conic-gradient(from 225deg, var(--rpm-color) 0 var(--rpm-deg, 0deg), rgba(255,255,255,.16) var(--rpm-deg, 0deg) 270deg, transparent 270deg 360deg) !important;
+}
+
+.alves-gauge-shell.normal{ --rpm-color:#a855f7; }
+.alves-gauge-shell.warning{ --rpm-color:#fbbf24; }
+.alves-gauge-shell.redline{
+  --rpm-color:#ef4444;
+  animation:alvesRedlineGaugeShake .085s infinite linear;
+}
+
+.alves-speed-footer{
+  width:118px !important;
+  margin-top:-3px !important;
+  transform:none !important;
+  filter:none !important;
+}
+
+.alves-speed-pill{
+  max-width:none !important;
+  background:rgba(8,9,15,.30) !important;
+  color:#fff !important;
+  animation:none !important;
+  transform:none !important;
+  filter:none !important;
+}
+
+.alves-speed-card.warning .alves-speed-pill strong,
+.alves-speed-card.redline .alves-speed-pill strong,
+.alves-speed-card.warning .alves-speed-unit,
+.alves-speed-card.redline .alves-speed-unit{
+  color:inherit !important;
+}
+
+.alves-gauge-shell.warning + .alves-gauge-center,
+.alves-gauge-shell.redline + .alves-gauge-center{
+  color:inherit !important;
+}
+
+@keyframes alvesRedlineGaugeShake{
+  0%{ transform:translate(0,0) rotate(0deg); }
+  25%{ transform:translate(.8px,-.8px) rotate(-.25deg); }
+  50%{ transform:translate(-.8px,.8px) rotate(.25deg); }
+  75%{ transform:translate(.6px,.6px) rotate(-.15deg); }
+  100%{ transform:translate(0,0) rotate(0deg); }
+}
