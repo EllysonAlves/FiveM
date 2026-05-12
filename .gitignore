@@ -63,6 +63,12 @@ Thumbs.db
 # resources/[vehicles]/
 # resources/[sounds]/
 # resources/[maps]/
+resources/[scripts]/JFx_EMS
+resources/[scripts]/JFx_lumipgroupshand
+resources/[scripts]/JFx_lumivehdata
+resources/[scripts]/JFx_lumivehhand
+resources/[scripts]/JFx_sounds
+resources/[scripts]/JFx_lumivehstream
 
 # FiveM artifacts/binários temporários
 *.tmp
