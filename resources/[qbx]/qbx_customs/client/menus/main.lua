@@ -18,29 +18,30 @@ local menu = {
 }
 
 local function main()
+    local options = {}
+
     if GetVehicleBodyHealth(vehicle) < 1000.0 then
-        return {{
+        options[#options + 1] = {
             label = locale('menus.main.repair'),
             description = ('%s%d'):format(config.currency, math.ceil(1000 - GetVehicleBodyHealth(vehicle))),
             close = true,
-        }}
+        }
     end
 
-    local options = {
-        {
-            label = locale('menus.main.parts'),
-            close = true,
-            args = {
-                menu = 'client.menus.parts',
-            }
-        },
-        {
-            label = locale('menus.main.colors'),
-            close = true,
-            args = {
-                menu = 'client.menus.colors',
-            }
-        },
+    options[#options + 1] = {
+        label = locale('menus.main.parts'),
+        close = true,
+        args = {
+            menu = 'client.menus.parts',
+        }
+    }
+
+    options[#options + 1] = {
+        label = locale('menus.main.colors'),
+        close = true,
+        args = {
+            menu = 'client.menus.colors',
+        }
     }
 
     if DoesExtraExist(vehicle, 1) then
