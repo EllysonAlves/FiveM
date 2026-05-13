@@ -75,11 +75,19 @@ ensure baseevents
 
 # Qbox & Extra stuff
 ensure ox_lib
+ensure oxmysql
 ensure qbx_core
 ensure ox_target
-ensure [ox]
-ensure [qbx]
-ensure [standalone]
+
+# Alves Racing é servidor focado só em corrida.
+# Não iniciar pacotes inteiros ([ox], [qbx], [standalone]) para evitar blips/sistemas inúteis:
+# combustível, cinto, lojas, garagens, empregos, roubos, roupas, postos etc.
+# Ative manualmente só o que o modo racing realmente usa.
+ensure qbx_spawn
+ensure qbx_hud
+ensure alves-racing-core
+ensure loadscreen
+ensure Renewed-Weathersync
 ensure [voice]
 ensure [assets]
 
@@ -96,11 +104,12 @@ ensure alves-racingapp
 # Para reativar, mova de volta para [scripts] e comente o alves-racingapp
 # ============================================================
 
-ensure [scripts]
-
-ensure [npwd-apps]
-ensure qbx_npwd
-ensure npwd
+# Scripts auxiliares antigos/telefone/garagens/apps ficam desativados no modo racing limpo.
+# ensure cw-performance
+# ensure cw-vehicledash
+# ensure [npwd-apps]
+# ensure qbx_npwd
+# ensure npwd
 
 ## Permissions ##
 add_principal identifier.fivem:166892 group.admin #ellyson66

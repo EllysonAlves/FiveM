@@ -205,7 +205,7 @@
                 </div>
             </div>
             <div id="ui-container">
-                <div id="playerHud" v-show="show">
+                <div id="playerHud" v-show="false">
                     <transition name="fade">
                     <div v-if="showVoice">
                         <q-circular-progress class="q-ml-xl" style="opacity: 40%;" :value="static" size="50px" :thickness="0.24" :style="{color: talkingColor}" :min="0" :max="100"></q-circular-progress>
@@ -328,18 +328,11 @@
                             <div class="ref-speed">{{ speed }}</div>
                             <div class="ref-unit">MPH</div>
                         </div>
-                        <div class="ref-bottom-panel">
-                            <div class="ref-panel-side fuel">
-                                <div class="ref-icon">⛽</div>
-                                <div class="ref-label">FUEL</div>
-                                <div class="ref-value">{{ Math.round(fuelPercent) }}%</div>
-                                <div class="ref-mini-bar"><div></div></div>
-                            </div>
-                            <div class="ref-panel-divider"></div>
-                            <div class="ref-panel-side belt" :class="beltState">
-                                <div class="ref-icon">●</div>
-                                <div class="ref-label">BELT</div>
-                                <div class="ref-value">{{ beltText }}</div>
+                        <div class="ref-bottom-panel racing-only">
+                            <div class="ref-panel-side">
+                                <div class="ref-icon">🏁</div>
+                                <div class="ref-label">RACING MODE</div>
+                                <div class="ref-value">ON</div>
                             </div>
                         </div>
                     </div>
