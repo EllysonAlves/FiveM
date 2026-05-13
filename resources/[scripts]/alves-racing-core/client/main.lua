@@ -109,8 +109,12 @@ end
 
 RegisterCommand('tuning', openVisualTuning, false)
 RegisterCommand('bennys', openVisualTuning, false)
+RegisterCommand('custom', openVisualTuning, false)
+RegisterCommand('customizar', openVisualTuning, false)
 TriggerEvent('chat:addSuggestion', '/tuning', 'Abre o tuning visual do carro atual')
 TriggerEvent('chat:addSuggestion', '/bennys', 'Abre o tuning visual do carro atual')
+TriggerEvent('chat:addSuggestion', '/custom', 'Abre o tuning visual do carro atual')
+TriggerEvent('chat:addSuggestion', '/customizar', 'Abre o tuning visual do carro atual')
 
 CreateThread(function()
     createSpawnBlip()
