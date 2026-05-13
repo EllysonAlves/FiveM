@@ -168,7 +168,7 @@ function showComingSoon(name) {
 
 function displayInfoModal(title, message) {
     setText('#scoreboard-title', title.toUpperCase());
-    setHtml('#scoreboard-tbody', `<tr><td colspan="4" style="text-align:center;">${message}</td></tr>`);
+    setHtml('#scoreboard-tbody', `<tr><td colspan="10" style="text-align:center;">${message}</td></tr>`);
     removeClass('#modal-scoreboard', 'hidden');
 }
 
@@ -430,13 +430,19 @@ function displayScoreboard(data) {
             html += `
                 <tr>
                     <td>${index + 1}</td>
+                    <td>${entry.position ? `#${entry.position}` : '-'}</td>
                     <td>${entry.racerName || entry.racer || 'Desconhecido'}</td>
+                    <td>${entry.trackName || entry.track || entry.trackId || 'N/A'}</td>
                     <td>${entry.vehicleModel || entry.car || 'N/A'}</td>
                     <td>${formatTime(entry.time || 0)}</td>
+                    <td>${entry.laps !== undefined ? entry.laps : '-'}</td>
+                    <td>${entry.averageSpeedKmh ? `${entry.averageSpeedKmh} km/h` : '-'}</td>
+                    <td>${(entry.raceType || 'casual').toUpperCase()}</td>
+                    <td>${entry.date || '-'}</td>
                 </tr>`;
         });
     } else {
-        html = '<tr><td colspan="4" style="text-align:center;">Nenhum tempo registrado ainda</td></tr>';
+        html = '<tr><td colspan="10" style="text-align:center;">Nenhuma corrida registrada ainda</td></tr>';
     }
     setHtml('#scoreboard-tbody', html);
     removeClass('#modal-scoreboard', 'hidden');

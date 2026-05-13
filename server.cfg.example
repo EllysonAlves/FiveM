@@ -85,10 +85,13 @@ ensure ox_target
 # Ative manualmente só o que o modo racing realmente usa.
 ensure qbx_spawn
 ensure qbx_hud
+
+# Veículos JFx precisam subir antes do dashboard e das corridas,
+# senão /carros e lobby podem tentar spawnar modelos que ainda não existem no client.
+ensure [JFx]
+
 ensure qbx_vehiclekeys
 ensure alves-racing-core
-ensure cw-performance
-ensure cw-vehicledash
 ensure loadscreen
 ensure Renewed-Weathersync
 ensure [voice]
@@ -101,6 +104,9 @@ ensure [assets]
 # ==================== SISTEMA DE CORRIDAS ====================
 # Alves Racing App - sistema principal de corrida/ranking/ELO
 ensure alves-racingapp
+
+# Dashboard /carros usa a lista QuickRaceVehicles do alves-racingapp.
+ensure cw-vehicledash
 
 # CW Racing App - Backup/Referência (DESATIVADO)
 # Movido para: resources/[scripts-backup]/cw-racingapp

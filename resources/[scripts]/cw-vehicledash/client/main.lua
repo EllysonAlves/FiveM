@@ -1,26 +1,10 @@
 -----------------------------------------------
 -- cw-vehicledash | client/main.lua
--- Dashboard de veiculos (NUI tablet) com classe cw-performance
+-- Dashboard de veiculos (NUI tablet) usando a mesma lista das corridas
 -- Comando: /carros
 -----------------------------------------------
 
 local isOpen      = false
-
--- Lista de carros JFx Classe S para corridas
-local JFX_RACE_CARS = {
-    'arbitergtc', 'arbitergtn', 'benito2020', 'carrion', 'carrionmech', 'cazador', 'cazadortcr',
-    'clubr', 'clubrhyc', 'dawn', 'elegyrh8c', 'elegyxa19', 'elegyxa19ven', 'flashgrs',
-    'growlerc', 'gstasp3', 'gstban1k2', 'gstbanac1', 'gstbanac1b', 'gstbanac1c', 'gstbisc1',
-    'gstbisc1b', 'gstbisc1c', 'gstcdy2', 'gstcdy2b', 'gstcdy2c', 'gstcdy2d', 'gstcs24',
-    'gstevmr1', 'gstgoose1', 'gstgoose1b', 'gstingnt1', 'gstingnt1b', 'gstpaladingt',
-    'gstpenf1', 'gstpmp7s1', 'gstpmp7s1b', 'gstpmp7s1c', 'gstpmp7s1d', 'gstraid3',
-    'gstrh5s2', 'gstsadlt5', 'gstsettimo1', 'gstslt1', 'gstsrs1', 'gsttorle1', 'gstturo1',
-    'gstvanguard1b', 'gstxsajest3reptile', 'gstyc1', 'hb4503k', 'hb450c', 'hb450d',
-    'hb450p', 'hb450s', 'hellfirec', 'komtour', 'nwjester', 'rathaulc', 'rattowc',
-    'rattrailer', 'rattruckc', 'remusx', 's790', 'schlag', 'shenron', 'shinobid', 'sr8',
-    'srspback', 'str', 'strcoupe', 'strwag', 'sunrise1', 'tailgatersr', 'taurion',
-    'trager', 'tragmech', 'vulture', 'xlsstr'
-}
 
 -----------------------------------------------
 -- Abrir a UI
@@ -30,9 +14,16 @@ local function openUI()
     if isOpen then return end
     isOpen = true
 
+    local raceCars = lib.callback.await('alves-racingapp:getQuickRaceVehicles', false) or {}
+    if #raceCars == 0 then
+        isOpen = false
+        lib.notify({ type = 'error', description = 'Lista de carros de corrida indisponível.' })
+        return
+    end
+
     local list = {}
-    -- Lista direta dos 75 carros JFx (sem calcular classe)
-    for _, modelName in ipairs(JFX_RACE_CARS) do
+    -- Lista direta dos carros usados nas corridas (sem scripts de classe externos)
+    for _, modelName in ipairs(raceCars) do
         list[#list + 1] = {
             modelName = modelName,
             name = modelName:upper(), -- Nome em maiusculas
@@ -43,7 +34,7 @@ local function openUI()
         }
     end
 
-    print('[cw-vehicledash] openUI: ' .. #list .. ' veiculos JFx Classe S')
+    print('[cw-vehicledash] openUI: ' .. #list .. ' veiculos de corrida')
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'open', data = { vehicles = list } })
 end
@@ -138,4 +129,4 @@ RegisterCommand('carros', function()
     openUI()
 end, false)
 
-TriggerEvent('chat:addSuggestion', '/carros', 'Abre o menu de carros JFx Classe S')
+TriggerEvent('chat:addSuggestion', '/carros', 'Abre o menu de carros usados nas corridas')
