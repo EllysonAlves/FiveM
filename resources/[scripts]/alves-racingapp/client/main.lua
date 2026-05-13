@@ -547,6 +547,21 @@ RegisterNetEvent('alves-racingapp:client:startLobbyRace', function(result)
     end)
 end)
 
+RegisterNetEvent('alves-racingapp:client:globalLobbyAlert', function(data)
+    data = data or {}
+    if inRace or inLobby then return end
+    if tonumber(data.source) == GetPlayerServerId(PlayerId()) then return end
+
+    local typeText = data.raceType == 'ranked' and 'ranqueada' or 'casual'
+    local racerName = data.racerName or 'Um piloto'
+    lib.notify({
+        type = 'inform',
+        description = string.format('%s abriu um lobby de corrida %s. Aperte F1 para entrar.', racerName, typeText)
+    })
+    SendNUIMessage({ action = 'playSound', sound = 'lobby' })
+    SendNUIMessage({ action = 'showGlobalLobbyAlert', data = data })
+end)
+
 -- ==================== NUI CALLBACKS ====================
 RegisterNUICallback('closeTablet', function(_, cb)
     SetNuiFocus(false, false)

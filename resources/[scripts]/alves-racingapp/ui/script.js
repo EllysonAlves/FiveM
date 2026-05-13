@@ -6,6 +6,9 @@ let countdownInterval = null;
 let lobbyInterval = null;
 let currentLobby = null;
 let lobbyMinimized = false;
+let lobbyCountdownAlertKey = null;
+let globalLobbyAlertTimeout = null;
+let audioContext = null;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -56,8 +59,67 @@ window.addEventListener('message', function(event) {
         case 'minimizeLobby': minimizeLobby(false); break;
         case 'maximizeLobby': maximizeLobby(false); break;
         case 'toggleLobby': toggleLobby(false); break;
+        case 'playSound': playSound(data.sound || 'notify'); break;
+        case 'showGlobalLobbyAlert': showGlobalLobbyAlert(data.data || {}); break;
     }
 });
+
+function getAudioContext() {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!audioContext) audioContext = new AudioCtx();
+    if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+    return audioContext;
+}
+
+function playTone(frequency, start, duration, volume = 0.08, type = 'sine') {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime + start);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(volume, ctx.currentTime + start + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + duration);
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start(ctx.currentTime + start);
+    oscillator.stop(ctx.currentTime + start + duration + 0.04);
+}
+
+function playSound(sound) {
+    if (sound === 'countdown10') {
+        playTone(880, 0, 0.12, 0.09, 'square');
+        playTone(880, 0.18, 0.12, 0.09, 'square');
+        playTone(1175, 0.36, 0.18, 0.08, 'square');
+        return;
+    }
+
+    if (sound === 'lobby') {
+        playTone(523.25, 0, 0.12, 0.075, 'sine');
+        playTone(659.25, 0.13, 0.12, 0.075, 'sine');
+        playTone(783.99, 0.26, 0.22, 0.085, 'sine');
+        return;
+    }
+
+    playTone(740, 0, 0.16, 0.07, 'sine');
+}
+
+function showGlobalLobbyAlert(data) {
+    const raceType = data.raceType === 'ranked' ? 'RANQUEADA' : 'CASUAL';
+    const racer = data.racerName || 'Um piloto';
+    setText('#global-lobby-alert-title', `LOBBY ${raceType} ABERTO`);
+    setText('#global-lobby-alert-text', `${racer} iniciou uma fila. Aperte F1 para entrar.`);
+
+    removeClass('#global-lobby-alert', 'hidden');
+    if (globalLobbyAlertTimeout) clearTimeout(globalLobbyAlertTimeout);
+    globalLobbyAlertTimeout = setTimeout(() => {
+        addClass('#global-lobby-alert', 'hidden');
+        globalLobbyAlertTimeout = null;
+    }, 8500);
+}
 
 function setActiveMenu(label) {
     $$('.menu-item').forEach(item => {
@@ -121,6 +183,7 @@ function hideLobby() {
     addClass('#lobby-mini', 'hidden');
     currentLobby = null;
     lobbyMinimized = false;
+    lobbyCountdownAlertKey = null;
     if (lobbyInterval) {
         clearInterval(lobbyInterval);
         lobbyInterval = null;
@@ -216,6 +279,12 @@ function displayLobby(data) {
         const remaining = Math.max(0, (currentLobby.endsAt || 0) - Math.floor(Date.now() / 1000));
         setText('#lobby-timer', `${remaining}s`);
         updateLobbyMini();
+
+        const alertKey = `${currentLobby.lobbyId || 'lobby'}:${currentLobby.endsAt || 0}`;
+        if (remaining <= 10 && remaining > 0 && lobbyCountdownAlertKey !== alertKey) {
+            lobbyCountdownAlertKey = alertKey;
+            playSound('countdown10');
+        }
     };
     renderTimer();
     if (lobbyInterval) clearInterval(lobbyInterval);
