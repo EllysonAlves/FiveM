@@ -1,476 +1,53 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vehicle Dashboard</title>
+  <title>Alves Racing — Veículos</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:         #0d0f14;
-      --surface:    #13161e;
-      --surface2:   #1a1e2a;
-      --surface3:   #222737;
-      --border:     #2a2f42;
-      --accent:     #4f8ef7;
-      --accent2:    #6c63ff;
-      --text:       #e8eaf0;
-      --muted:      #7b82a0;
-      --success:    #2ecc71;
-      --danger:     #e74c3c;
-      --warn:       #f39c12;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#050510;--bg2:#080816;--panel:#0d0b1a;--card:#11101f;--card2:#17132a;
+      --purple:#7c3aed;--purple2:#a855f7;--purple3:#c084fc;--border:rgba(168,85,247,.20);
+      --text:#fff;--muted:#9ca0b5;--green:#00d26a;--danger:#ef4444;
     }
-
-    html, body { width: 100%; height: 100%; background: transparent; overflow: hidden;
-      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; color: var(--text); }
-
-    /* ── Overlay ── */
-    #overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.6);
-      align-items: center; justify-content: center;
-      z-index: 10;
-    }
-
-    /* ── Tablet ── */
-    .tablet {
-      width: 920px; max-width: 96vw;
-      height: 680px; max-height: 94vh;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      display: flex; flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 32px 80px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.04);
-    }
-
-    /* ── Header ── */
-    .hdr {
-      padding: 16px 22px 14px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      display: flex; align-items: center; gap: 12px;
-      flex-shrink: 0;
-    }
-    .hdr-icon {
-      width: 38px; height: 38px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: flex; align-items: center; justify-content: center; font-size: 18px;
-    }
-    .hdr-text { flex: 1; }
-    .hdr-title { font-size: 15px; font-weight: 700; letter-spacing: .2px; }
-    .hdr-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .btn-close {
-      width: 30px; height: 30px; border-radius: 8px;
-      background: var(--surface3); border: 1px solid var(--border);
-      color: var(--muted); cursor: pointer; font-size: 16px;
-      display: flex; align-items: center; justify-content: center;
-      transition: background .15s, color .15s;
-    }
-    .btn-close:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
-
-    /* ── Toolbar ── */
-    .toolbar {
-      padding: 10px 22px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      display: flex; align-items: center; gap: 10px;
-      flex-shrink: 0;
-    }
-    .search-wrap { position: relative; flex: 1; }
-    .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; }
-    .search {
-      width: 100%; height: 34px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 0 12px 0 32px;
-      color: var(--text); font-size: 13px; outline: none;
-      transition: border-color .15s;
-    }
-    .search:focus { border-color: var(--accent); }
-    .tabs { display: flex; gap: 6px; }
-    .tab {
-      height: 34px; padding: 0 14px; border-radius: 8px;
-      border: 1px solid var(--border); background: var(--surface2);
-      color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer;
-      transition: all .15s;
-    }
-    .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .tab:not(.active):hover { border-color: var(--accent); color: var(--text); }
-
-    /* ── Layout ── */
-    .layout { display: flex; flex: 1; overflow: hidden; }
-
-    /* ── Sidebar ── */
-    .sidebar {
-      width: 205px; flex-shrink: 0;
-      background: var(--surface); border-right: 1px solid var(--border);
-      overflow-y: auto; padding: 10px 8px;
-    }
-    .sidebar::-webkit-scrollbar { width: 3px; }
-    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    .sidebar-label {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 1px; color: var(--muted); padding: 6px 8px 4px;
-    }
-    .sitem {
-      height: 36px; padding: 0 8px; border-radius: 8px; cursor: pointer;
-      display: flex; align-items: center; gap: 8px;
-      font-size: 13px; font-weight: 500; color: var(--muted);
-      transition: all .12s; margin-bottom: 2px;
-    }
-    .sitem:hover { background: var(--surface2); color: var(--text); }
-    .sitem.active { background: rgba(79,142,247,.14); color: var(--accent); }
-    .si-icon { font-size: 14px; flex-shrink: 0; }
-    .si-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .si-badge {
-      font-size: 10px; padding: 1px 7px;
-      background: var(--surface3); border-radius: 20px; color: var(--muted);
-      margin-left: auto; flex-shrink: 0;
-    }
-    .sitem.active .si-badge { background: rgba(79,142,247,.2); color: var(--accent); }
-    .cls-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-    /* ── Main ── */
-    .main { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 7px; }
-    .main::-webkit-scrollbar { width: 3px; }
-    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-    /* ── Cards ── */
-    .card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 11px; padding: 12px 14px;
-      display: flex; align-items: center; gap: 12px;
-      transition: border-color .12s, background .12s;
-    }
-    .card:hover { border-color: var(--accent); background: var(--surface2); }
-
-    .card-img { width: 110px; height: 66px; flex-shrink: 0; border-radius: 8px; background: var(--surface3); overflow: hidden; display: flex; align-items: center; justify-content: center; }
-    .card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    .cls-badge {
-      width: 40px; height: 40px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 17px; font-weight: 800; flex-shrink: 0;
-    }
-    .cls-X { background: rgba(255,77,109,.15);  color: #ff4d6d; }
-    .cls-S { background: rgba(255,159,67,.15);  color: #ff9f43; }
-    .cls-A { background: rgba(255,211,42,.15);  color: #ffd32a; }
-    .cls-B { background: rgba(46,204,113,.15);  color: #2ecc71; }
-    .cls-C { background: rgba(84,160,255,.15);  color: #54a0ff; }
-    .cls-D { background: rgba(162,155,254,.15); color: #a29bfe; }
-    .cls-E { background: rgba(99,110,114,.15);  color: #636e72; }
-    .cls-  { background: var(--surface3);       color: var(--muted); }
-
-    .card-info { flex: 1; min-width: 0; }
-    .card-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-    .card-score { font-size: 12px; color: var(--muted); text-align: right; flex-shrink: 0; }
-    .card-score .val { display: block; font-size: 15px; font-weight: 700; color: var(--text); }
-
-    .btn-spawn {
-      height: 32px; padding: 0 14px; border-radius: 8px; border: none;
-      background: var(--accent); color: #fff;
-      font-size: 12px; font-weight: 600; cursor: pointer;
-      transition: background .12s, transform .1s; flex-shrink: 0;
-    }
-    .btn-spawn:hover { background: #3a7de8; }
-    .btn-spawn:active { transform: scale(.96); }
-
-    /* ── States ── */
-    .state-box {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 12px;
-      color: var(--muted); font-size: 14px;
-    }
-    .state-box .icon { font-size: 36px; }
-    .spinner {
-      width: 34px; height: 34px;
-      border: 3px solid var(--border); border-top-color: var(--accent);
-      border-radius: 50%; animation: spin .65s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Toast ── */
-    .toast {
-      position: fixed; bottom: 22px; left: 50%;
-      transform: translateX(-50%) translateY(60px);
-      background: var(--surface3); border: 1px solid var(--border);
-      border-radius: 10px; padding: 9px 18px;
-      font-size: 13px; font-weight: 500;
-      box-shadow: 0 8px 30px rgba(0,0,0,.5);
-      opacity: 0; pointer-events: none; z-index: 20;
-      transition: transform .2s ease, opacity .2s ease;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-    .toast.success { border-color: var(--success); color: var(--success); }
-    .toast.error   { border-color: var(--danger);  color: var(--danger);  }
-    .toast.info    { border-color: var(--accent);  color: var(--accent);  }
+    html,body{width:100%;height:100%;overflow:hidden;background:transparent;font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif;color:var(--text)}
+    #overlay{display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,.38);z-index:10}
+    .dash{width:1220px;max-width:94vw;height:780px;max-height:92vh;border-radius:28px;overflow:hidden;background:
+      radial-gradient(circle at 18% 0%,rgba(124,58,237,.30),transparent 34%),
+      radial-gradient(circle at 100% 20%,rgba(168,85,247,.16),transparent 30%),
+      linear-gradient(180deg,#080816,#050510 70%);border:1px solid var(--border);box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 45px rgba(124,58,237,.20);padding:26px;display:flex;flex-direction:column;gap:20px}
+    .top{display:flex;align-items:center;gap:16px}.icon{width:54px;height:54px;border-radius:18px;background:linear-gradient(135deg,var(--purple),var(--purple2));display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 12px 30px rgba(124,58,237,.42)}
+    .titlebox{flex:1}.title{font-size:30px;font-weight:950;letter-spacing:-.04em}.sub{font-size:14px;color:var(--muted);margin-top:4px}.server-pill{display:flex;align-items:center;gap:10px;padding:13px 16px;border-radius:18px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);font-size:13px;color:var(--muted);font-weight:800}.dot{width:9px;height:9px;border-radius:999px;background:var(--green);box-shadow:0 0 14px var(--green)}
+    .close{width:46px;height:46px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045);color:#d9d6ff;font-size:22px;cursor:pointer;transition:.16s}.close:hover{background:rgba(239,68,68,.16);border-color:rgba(239,68,68,.42);color:#fff}
+    .toolbar{display:flex;align-items:center;gap:12px}.search-wrap{position:relative;flex:1}.search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:#bda8ff}.search{width:100%;height:52px;border-radius:18px;border:1px solid rgba(168,85,247,.38);background:rgba(13,11,26,.82);box-shadow:inset 0 0 18px rgba(124,58,237,.08),0 0 18px rgba(124,58,237,.08);padding:0 18px 0 48px;color:#fff;font-size:15px;outline:none}.search:focus{border-color:var(--purple2);box-shadow:0 0 26px rgba(168,85,247,.18)}
+    .select,.view{height:52px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045);color:#d7d3ff;font-weight:850;padding:0 16px}.view{width:52px;font-size:19px}.view.active{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff;border-color:transparent;box-shadow:0 10px 26px rgba(124,58,237,.32)}
+    .grid{flex:1;min-height:0;overflow-y:auto;padding-right:8px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-content:start}.grid::-webkit-scrollbar{width:5px}.grid::-webkit-scrollbar-thumb{background:rgba(168,85,247,.32);border-radius:999px}
+    .card{position:relative;min-height:222px;border-radius:24px;padding:16px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025)),radial-gradient(circle at 50% 8%,rgba(168,85,247,.22),transparent 42%),var(--card);border:1px solid rgba(168,85,247,.17);box-shadow:inset 0 0 24px rgba(124,58,237,.045);display:flex;flex-direction:column;transition:.16s}.card:hover{transform:translateY(-2px);border-color:rgba(168,85,247,.55);box-shadow:0 18px 38px rgba(0,0,0,.24),0 0 30px rgba(124,58,237,.13)}
+    .car-img{height:92px;border-radius:18px;background:radial-gradient(circle,rgba(168,85,247,.28),rgba(255,255,255,.035) 62%,rgba(255,255,255,.02));display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:14px}.car-img img{max-width:115%;height:100%;object-fit:cover;filter:drop-shadow(0 14px 18px rgba(0,0,0,.55))}.fallback-car{font-size:42px;opacity:.85}
+    .name{font-size:16px;font-weight:950;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}.meta{display:flex;align-items:center;gap:8px;margin-top:9px;color:var(--muted);font-size:13px;font-weight:800}.badge{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;background:rgba(168,85,247,.22);border:1px solid rgba(168,85,247,.32);color:#e9d5ff;font-weight:950}.spawn{margin-top:auto;height:42px;border:0;border-radius:15px;background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff;font-weight:950;font-size:13px;cursor:pointer;box-shadow:0 12px 26px rgba(124,58,237,.30);transition:.13s}.spawn:hover{filter:brightness(1.12)}.spawn:active{transform:scale(.97)}
+    .footer{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted);font-size:13px}.pages{display:flex;gap:8px}.page{min-width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045);color:#d7d3ff;font-weight:900;cursor:pointer}.page.active{background:linear-gradient(135deg,var(--purple),var(--purple2));border-color:transparent;color:#fff}.page:disabled{opacity:.35;cursor:not-allowed}.empty{grid-column:1/-1;align-self:center;justify-self:center;color:var(--muted);font-size:16px;padding:80px}.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(40px);opacity:0;pointer-events:none;padding:12px 20px;border-radius:15px;background:rgba(13,11,26,.92);border:1px solid var(--border);box-shadow:0 18px 40px rgba(0,0,0,.35);font-weight:850;transition:.18s;z-index:20}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.success{color:var(--green)}.toast.error{color:var(--danger)}.toast.info{color:var(--purple3)}
+    @media(max-width:1050px){.grid{grid-template-columns:repeat(3,1fr)}.dash{width:980px}}@media(max-width:780px){.grid{grid-template-columns:repeat(2,1fr)}.server-pill,.select,.view{display:none}}
   </style>
 </head>
 <body>
-
-<div id="overlay">
-  <div class="tablet">
-
-    <div class="hdr">
-      <div class="hdr-icon">🚗</div>
-      <div class="hdr-text">
-        <div class="hdr-title">Vehicle Dashboard</div>
-        <div class="hdr-sub" id="hdr-sub">Carregando...</div>
-      </div>
-      <button class="btn-close" id="btn-close">✕</button>
-    </div>
-
-    <div class="toolbar">
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input class="search" id="search-input" type="text" placeholder="Buscar veículo..." autocomplete="off" />
-      </div>
-    </div>
-
-    <div class="layout">
-      <div class="sidebar" id="sidebar"></div>
-      <div class="main" id="main"></div>
-    </div>
-
-  </div>
-</div>
-
+<div id="overlay"><div class="dash">
+  <div class="top"><div class="icon">🏎️</div><div class="titlebox"><div class="title">Veículos</div><div class="sub">Escolha seu veículo e entre em ação.</div></div><div class="server-pill"><span class="dot"></span><span>Servidor: JFx Classe S</span></div><button class="close" id="btn-close">↗</button></div>
+  <div class="toolbar"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search" id="search-input" type="text" placeholder="Buscar veículo..." autocomplete="off"></div><button class="select" id="sort-btn">Ordenar: A - Z</button><button class="view active">▦</button><button class="view">☰</button></div>
+  <div class="grid" id="grid"></div>
+  <div class="footer"><div class="pages" id="pages"></div><div id="range-label">Mostrando 0 veículos</div></div>
+</div></div>
 <div class="toast" id="toast"></div>
-
 <script>
-  // ── Constants ──────────────────────────────────────────────────────────────
-  const CLASS_ORDER  = ['X', 'S', 'A', 'B', 'C', 'D', 'E'];
-  const CLASS_COLORS = { X:'#ff4d6d', S:'#ff9f43', A:'#ffd32a', B:'#2ecc71', C:'#54a0ff', D:'#a29bfe', E:'#636e72' };
-  const CLASS_LABELS = { X:'X — Elite', S:'S — Super', A:'A — Sport', B:'B — Performance', C:'C — Compacto Sport', D:'D — Compacto', E:'E — Básico' };
-  const CAT_ICONS    = { super:'🏎️', sports:'🚗', muscle:'🚙', sportsclassics:'🏛️', suv:'🚐', offroad:'🛻', compacts:'🚕', sedans:'🚘', coupes:'🚗', vans:'🚌', cycles:'🏍️', motorcycles:'🏍️', boats:'⛵', helicopters:'🚁', planes:'✈️', emergency:'🚨', service:'🚒', commercial:'🚛', industrial:'🏗️', military:'🪖', openwheel:'🏁' };
-
-  // ── State ──────────────────────────────────────────────────────────────────
-  const state = {
-    vehicles:    [],
-    activeGroup: null,
-    search:      '',
-    loading:     false,
-  };
-
-  // ── NUI Messages ───────────────────────────────────────────────────────────
-  window.addEventListener('message', function(ev) {
-    const msg = ev.data;
-    if (!msg || !msg.action) return;
-
-    if (msg.action === 'open') {
-      var vList = msg.data && msg.data.vehicles ? msg.data.vehicles : [];
-      // JA VEM COM CLASSE E SCORE DO SERVIDOR (sem calcular)
-      state.vehicles    = vList;
-      state.activeGroup = 'S'; // Seleciona Classe S automaticamente
-      state.search      = '';
-      state.loading     = false; // Nao precisa calcular
-
-      document.getElementById('search-input').value = '';
-      document.getElementById('hdr-sub').textContent = state.vehicles.length + ' carros JFx Classe S';
-      document.getElementById('overlay').style.display = 'flex';
-      render();
-      return;
-    }
-
-    if (msg.action === 'close')     { closeOverlay(); return; }
-    if (msg.action === 'spawnOk')   { showToast('✅ ' + ((msg.data && msg.data.name) || 'Veículo') + ' spawnado!', 'success'); return; }
-    if (msg.action === 'spawnFail') { showToast('❌ Falha ao spawnar o veículo', 'error'); return; }
-  });
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  function findVehicle(modelName) {
-    for (var i = 0; i < state.vehicles.length; i++) {
-      if (state.vehicles[i].modelName === modelName) return state.vehicles[i];
-    }
-    return null;
-  }
-
-  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
-
-  function getGroups() {
-    return CLASS_ORDER.slice();
-  }
-
-  function getFiltered() {
-    var list = state.vehicles;
-    if (state.activeGroup && state.activeGroup !== '__search__') {
-      list = list.filter(function(v) { return v.class === state.activeGroup; });
-    }
-    if (state.search) {
-      var q = state.search.toLowerCase();
-      list = list.filter(function(v) {
-        return v.name.toLowerCase().indexOf(q) !== -1 ||
-               (v.brand || '').toLowerCase().indexOf(q) !== -1 ||
-               v.modelName.toLowerCase().indexOf(q) !== -1;
-      });
-    }
-    return list;
-  }
-
-  function nui(action, data) {
-    fetch('https://cw-vehicledash/' + action, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data || {}),
-    }).catch(function() {});
-  }
-
-  // ── Select group ───────────────────────────────────────────────────────────
-  function selectGroup(group) {
-    state.activeGroup = group;
-    render();
-  }
-
-  // ── Render ─────────────────────────────────────────────────────────────────
-  function render() { renderSidebar(); renderMain(); }
-
-  function renderSidebar() {
-    var sidebar = document.getElementById('sidebar');
-    sidebar.innerHTML = '';
-
-    var lbl = document.createElement('div');
-    lbl.className = 'sidebar-label';
-    lbl.textContent = state.filterMode === 'category' ? 'Categorias' : 'Classes';
-    sidebar.appendChild(lbl);
-
-    var groups = getGroups();
-    groups.forEach(function(g) {
-      var el = document.createElement('div');
-      el.className = 'sitem' + (state.activeGroup === g ? ' active' : '');
-      el.onclick = function() { selectGroup(g); };
-
-      if (state.filterMode === 'category') {
-        var count = state.vehicles.filter(function(v) { return v.category === g; }).length;
-        el.innerHTML =
-          '<span class="si-icon">' + (CAT_ICONS[g] || '🚗') + '</span>' +
-          '<span class="si-label">' + cap(g) + '</span>' +
-          '<span class="si-badge">' + count + '</span>';
-      } else {
-        var cnt = state.vehicles.filter(function(v) { return v.class === g; }).length;
-        el.innerHTML =
-          '<div class="cls-dot" style="background:' + (CLASS_COLORS[g] || '#636e72') + '"></div>' +
-          '<span class="si-label">' + CLASS_LABELS[g] + '</span>' +
-          '<span class="si-badge">' + (cnt > 0 ? cnt : '?') + '</span>';
-      }
-
-      sidebar.appendChild(el);
-    });
-  }
-
-  function renderMain() {
-    var el   = document.getElementById('main');
-    var list = getFiltered();
-
-    // No group selected and no search
-    if (!state.activeGroup && !state.search) {
-      el.innerHTML = state.loading
-        ? '<div class="state-box"><div class="spinner"></div><p>Calculando classes, aguarde...</p></div>'
-        : '<div class="state-box"><div class="icon">&#128072;</div><p>Selecione uma classe ao lado</p></div>';
-      return;
-    }
-
-    if (list.length === 0 && state.loading) {
-      el.innerHTML = '<div class="state-box"><div class="spinner"></div><p>Calculando classes...</p></div>';
-      return;
-    }
-
-    if (list.length === 0) {
-      el.innerHTML = '<div class="state-box"><div class="icon">&#128269;</div><p>Nenhum veículo encontrado</p></div>';
-      return;
-    }
-
-    // Sort by class then name
-    var sorted = list.slice().sort(function(a, b) {
-      var ia = CLASS_ORDER.indexOf(a.class), ib = CLASS_ORDER.indexOf(b.class);
-      if (ia !== ib) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-      return a.name.localeCompare(b.name);
-    });
-
-    el.innerHTML = '';
-    sorted.forEach(function(v) {
-      var cls  = v.class || '';
-      var card = document.createElement('div');
-      card.className = 'card';
-
-      var scoreHtml = v.score
-        ? '<div class="card-score"><span style="font-size:11px;color:var(--muted)">Score</span><span class="val">' + v.score + '</span></div>'
-        : '';
-
-      card.innerHTML =
-        '<div class="card-img"><img src="https://docs.fivem.net/vehicles/' + v.modelName.toLowerCase() + '.webp" onerror="this.style.display=\'none\'" alt=""/></div>' +
-        '<div class="cls-badge cls-' + cls + '">' + (cls || '...') + '</div>' +
-        '<div class="card-info">' +
-          '<div class="card-name">' + v.name + '</div>' +
-          '<div class="card-meta">' + cap(v.category) + '</div>' +
-        '</div>' +
-        scoreHtml +
-        '<button class="btn-spawn">Spawnar</button>';
-
-      card.querySelector('.btn-spawn').onclick = function(e) {
-        e.stopPropagation();
-        nui('spawnVehicle', { modelName: v.modelName, name: v.name });
-        showToast('Spawnando ' + v.name + '...', 'info');
-      };
-
-      el.appendChild(card);
-    });
-
-    // Loading spinner enquanto ainda ha veiculos sem classe
-    if (state.loading) {
-      var bar = document.createElement('div');
-      bar.className = 'state-box';
-      bar.style.flex = 'none';
-      bar.style.padding = '16px';
-      bar.innerHTML = '<div class="spinner"></div><p style="font-size:12px">Calculando classes restantes...</p>';
-      el.appendChild(bar);
-    }
-  }
-
-  // ── UI Controls ────────────────────────────────────────────────────────────
-
-  document.getElementById('search-input').oninput = function(e) {
-    state.search = e.target.value.trim();
-    if (state.search && !state.activeGroup) state.activeGroup = '__search__';
-    if (!state.search && state.activeGroup === '__search__') state.activeGroup = null;
-    render();
-  };
-
-  document.getElementById('btn-close').onclick = closeUI;
-  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeUI(); });
-  document.getElementById('overlay').onclick = function(e) {
-    if (e.target === document.getElementById('overlay')) closeUI();
-  };
-
-  function closeOverlay() { document.getElementById('overlay').style.display = 'none'; }
-  function closeUI() { closeOverlay(); nui('closeUI', {}); }
-
-  // ── Debug shortcut (F9 abre com dados falsos no browser) ───────────────────
-  document.addEventListener('keydown', function(ev) {
-    if (ev.key !== 'F9') return;
-    var clss  = ['S','S','A','A','A','B','B','C','X','S'];
-    var cats  = ['super','sports','sports','sports','super','super','super','sports','super','sports'];
-    var names = ['Adder','Banshee','Zentorno','Infernus','T20','Vagner','Emerus','Pariah','Cyclone','Deveste'];
-    var fake  = names.map(function(n, i) { return { modelName: n.toLowerCase(), name: n, brand: 'Test', category: cats[i] }; });
-    window.dispatchEvent(new MessageEvent('message', { data: { action: 'open', data: { vehicles: fake } } }));
-    setTimeout(function() {
-      var res = fake.map(function(v, i) { return { modelName: v.modelName, class: clss[i], score: 400 + i * 60, group: '__all__' }; });
-      window.dispatchEvent(new MessageEvent('message', { data: { action: 'classResult', data: res } }));
-    }, 300);
-  });
-
-  // ── Toast ──────────────────────────────────────────────────────────────────
-  var toastTimer;
-  function showToast(msg, type, dur) {
-    var el = document.getElementById('toast');
-    el.textContent = msg;
-    el.className = 'toast show ' + (type || '');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function() { el.className = 'toast'; }, dur || 3000);
-  }
+  const state={vehicles:[],search:'',page:1,perPage:12,sortAsc:true};
+  window.addEventListener('message',ev=>{const msg=ev.data||{};if(msg.action==='open'){state.vehicles=(msg.data&&msg.data.vehicles)||[];state.search='';state.page=1;document.getElementById('search-input').value='';document.getElementById('overlay').style.display='flex';render();} if(msg.action==='close')closeOverlay(); if(msg.action==='spawnOk')showToast('✅ '+((msg.data&&msg.data.name)||'Veículo')+' spawnado!','success'); if(msg.action==='spawnFail')showToast('❌ Falha ao spawnar o veículo','error');});
+  function nui(action,data){fetch('https://cw-vehicledash/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data||{})}).catch(()=>{});}
+  function filtered(){let q=state.search.toLowerCase();let list=state.vehicles.filter(v=>!q||v.name.toLowerCase().includes(q)||v.modelName.toLowerCase().includes(q));return list.sort((a,b)=>state.sortAsc?a.name.localeCompare(b.name):b.name.localeCompare(a.name));}
+  function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):''}
+  function render(){const list=filtered();const pages=Math.max(1,Math.ceil(list.length/state.perPage));if(state.page>pages)state.page=pages;const start=(state.page-1)*state.perPage;const pageItems=list.slice(start,start+state.perPage);const grid=document.getElementById('grid');grid.innerHTML='';if(!pageItems.length){grid.innerHTML='<div class="empty">Nenhum veículo encontrado</div>';}pageItems.forEach(v=>{const card=document.createElement('div');card.className='card';card.innerHTML='<div class="car-img"><img src="https://docs.fivem.net/vehicles/'+v.modelName.toLowerCase()+'.webp" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'fallback-car\',textContent:\'🏎️\'}))"></div><div class="name">'+v.name+'</div><div class="meta"><span class="badge">S</span><span>Super</span></div><button class="spawn">🚀 Spawnar</button>';card.querySelector('.spawn').onclick=()=>{nui('spawnVehicle',{modelName:v.modelName,name:v.name});showToast('Spawnando '+v.name+'...','info')};grid.appendChild(card);});renderPages(pages);const end=Math.min(start+pageItems.length,list.length);document.getElementById('range-label').textContent=list.length?'Mostrando '+(start+1)+' a '+end+' de '+list.length+' veículos':'Mostrando 0 veículos';}
+  function renderPages(pages){const el=document.getElementById('pages');el.innerHTML='';const add=(txt,fn,cls,dis)=>{const b=document.createElement('button');b.className='page '+(cls||'');b.textContent=txt;b.disabled=!!dis;b.onclick=fn;el.appendChild(b)};add('‹',()=>{state.page--;render()},'',state.page<=1);for(let i=1;i<=pages;i++){if(i>5&&i<pages&&Math.abs(i-state.page)>1){if(i===6)add('…',()=>{},'',true);continue;}add(String(i),()=>{state.page=i;render()},i===state.page?'active':'');}add('›',()=>{state.page++;render()},'',state.page>=pages);}
+  document.getElementById('search-input').oninput=e=>{state.search=e.target.value.trim();state.page=1;render()};document.getElementById('sort-btn').onclick=()=>{state.sortAsc=!state.sortAsc;document.getElementById('sort-btn').textContent='Ordenar: '+(state.sortAsc?'A - Z':'Z - A');render()};document.getElementById('btn-close').onclick=closeUI;document.addEventListener('keydown',e=>{if(e.key==='Escape')closeUI()});function closeOverlay(){document.getElementById('overlay').style.display='none'}function closeUI(){closeOverlay();nui('closeUI',{})}
+  let toastTimer;function showToast(msg,type,dur){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show '+(type||'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.className='toast',dur||3000)}
 </script>
 </body>
 </html>

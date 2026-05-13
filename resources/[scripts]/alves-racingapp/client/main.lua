@@ -461,9 +461,24 @@ function startRaceSession(result)
     SetEntityCoords(ped, spawnX, spawnY, spawnZ, false, false, false, false)
     SetEntityHeading(ped, heading)
 
-    local model = GetHashKey(result.vehicleModel)
+    local requestedModel = result.vehicleModel or 'sultanrs'
+    local model = GetHashKey(requestedModel)
+    if not IsModelInCdimage(model) or not IsModelAVehicle(model) then
+        print(('[Alves Racing] Veículo inválido no lobby: %s. Usando fallback sultanrs.'):format(tostring(requestedModel)))
+        requestedModel = 'sultanrs'
+        model = GetHashKey(requestedModel)
+    end
+
     RequestModel(model)
-    while not HasModelLoaded(model) do Wait(10) end
+    local modelTimeout = GetGameTimer() + 8000
+    while not HasModelLoaded(model) and GetGameTimer() < modelTimeout do Wait(10) end
+
+    if not HasModelLoaded(model) then
+        DoScreenFadeIn(500)
+        lib.notify({ type = 'error', description = ('Não consegui carregar o veículo %s'):format(tostring(requestedModel)) })
+        inRace = false
+        return
+    end
 
     local veh = CreateVehicle(model, spawnX, spawnY, startCoords.z + 0.5, heading, true, false)
     SetVehicleOnGroundProperly(veh)
@@ -499,7 +514,7 @@ function startRaceSession(result)
     inRace = true
 
     local typeText = raceType == 'ranked' and 'RANKED' or 'CASUAL'
-    lib.notify({ type = 'success', description = string.format('Pista: %s (%s) | Carro: %s', result.trackName, typeText, result.vehicleModel) })
+    lib.notify({ type = 'success', description = string.format('Pista: %s (%s) | Carro: %s', result.trackName, typeText, requestedModel) })
 
     setupBlipsForRace()
 
