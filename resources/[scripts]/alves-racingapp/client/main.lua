@@ -507,6 +507,15 @@ end
 
 function applyRaceVehicleRules(vehicle)
     if not DoesEntityExist(vehicle) then return end
+    SetVehicleModKit(vehicle, 0)
+    for _, modType in ipairs({ 11, 12, 13, 15, 16 }) do
+        local count = GetNumVehicleMods(vehicle, modType)
+        if count and count > 0 then
+            SetVehicleMod(vehicle, modType, count - 1, false)
+        end
+    end
+    ToggleVehicleMod(vehicle, 18, true)
+
     SetEntityInvincible(vehicle, true)
     SetVehicleCanBeVisiblyDamaged(vehicle, false)
     SetVehicleBodyHealth(vehicle, 1000.0)

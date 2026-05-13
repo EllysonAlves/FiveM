@@ -15,6 +15,7 @@ Config.ImmortalPlayers = true
 Config.NoVehicleEjection = true
 Config.DisableFuelDrain = true
 Config.HideGtaHud = true
+Config.MaxVehiclePerformance = true
 
 -- Ped padrão para todos os jogadores no modo racing.
 -- Troque somente esse campo se quiser outro piloto.

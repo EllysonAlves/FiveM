@@ -28,13 +28,6 @@ local function main()
 
     local options = {
         {
-            label = locale('menus.main.performance'),
-            close = true,
-            args = {
-                menu = 'client.menus.performance',
-            }
-        },
-        {
             label = locale('menus.main.parts'),
             close = true,
             args = {

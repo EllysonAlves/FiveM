@@ -72,6 +72,18 @@ local function applySavedVisualPreset(vehicle, modelName)
     if preset then applyVehicleVisualPreset(vehicle, preset) end
 end
 
+local function applyMaxPerformance(vehicle)
+    if not DoesEntityExist(vehicle) then return end
+    SetVehicleModKit(vehicle, 0)
+    for _, modType in ipairs({ 11, 12, 13, 15, 16 }) do
+        local count = GetNumVehicleMods(vehicle, modType)
+        if count and count > 0 then
+            SetVehicleMod(vehicle, modType, count - 1, false)
+        end
+    end
+    ToggleVehicleMod(vehicle, 18, true)
+end
+
 -----------------------------------------------
 -- Abrir a UI
 -----------------------------------------------
@@ -146,6 +158,7 @@ RegisterNUICallback('spawnVehicle', function(data, cb)
         end
 
         applySavedVisualPreset(veh, modelName)
+        applyMaxPerformance(veh)
         
         SetVehicleNeedsToBeHotwired(veh, false)
         SetVehicleHasBeenOwnedByPlayer(veh, true)

@@ -95,6 +95,7 @@ ensure qbx_hud
 ensure [JFx]
 
 ensure qbx_vehiclekeys
+ensure qbx_customs
 ensure alves-racing-core
 ensure loadscreen
 ensure Renewed-Weathersync

@@ -71,6 +71,17 @@ end
 local function applyVehicleRaceRules(vehicle)
     if not DoesEntityExist(vehicle) then return end
 
+    if Config.MaxVehiclePerformance then
+        SetVehicleModKit(vehicle, 0)
+        for _, modType in ipairs({ 11, 12, 13, 15, 16 }) do
+            local count = GetNumVehicleMods(vehicle, modType)
+            if count and count > 0 then
+                SetVehicleMod(vehicle, modType, count - 1, false)
+            end
+        end
+        ToggleVehicleMod(vehicle, 18, true) -- turbo
+    end
+
     if Config.DisableFuelDrain then
         SetVehicleFuelLevel(vehicle, 100.0)
     end
@@ -80,6 +91,26 @@ local function applyVehicleRaceRules(vehicle)
     SetVehicleEngineHealth(vehicle, 1000.0)
     SetVehiclePetrolTankHealth(vehicle, 1000.0)
 end
+
+local function openVisualTuning()
+    local ped = PlayerPedId()
+    if not IsPedInAnyVehicle(ped, false) then
+        lib.notify({ type = 'error', description = 'Entre em um carro para abrir o tuning visual.' })
+        return
+    end
+
+    if GetResourceState('qbx_customs') ~= 'started' then
+        lib.notify({ type = 'error', description = 'qbx_customs não está iniciado.' })
+        return
+    end
+
+    exports.qbx_customs:OpenMenu()
+end
+
+RegisterCommand('tuning', openVisualTuning, false)
+RegisterCommand('bennys', openVisualTuning, false)
+TriggerEvent('chat:addSuggestion', '/tuning', 'Abre o tuning visual do carro atual')
+TriggerEvent('chat:addSuggestion', '/bennys', 'Abre o tuning visual do carro atual')
 
 CreateThread(function()
     createSpawnBlip()
