@@ -106,7 +106,7 @@ function finishRace()
     local vehicleName = 'Unknown'
     
     if DoesEntityExist(veh) then
-        vehicleName = GetDisplayNameFromVehicleModel(GetEntityModel(veh))
+        vehicleName = CurrentRaceData.VehicleModel or GetDisplayNameFromVehicleModel(GetEntityModel(veh))
     end
     
     print(string.format('[Alves Racing Client] Finalizando corrida: %s - Tempo: %dms', raceName, finalTime))
@@ -508,6 +508,7 @@ function startRaceSession(result)
         TotalTime = 0,
         BestLap = 0,
         TotalRacers = result.totalRacers or Config.DefaultTotalRacers,
+        VehicleModel = requestedModel,
         Vehicle = veh
     }
 

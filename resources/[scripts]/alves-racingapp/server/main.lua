@@ -419,7 +419,21 @@ end
 local function getBestTimesForTrack(trackId)
     if not trackId then return {} end
     return MySQL.query.await(
-        'SELECT racerName, time, vehicleModel as car, FROM_UNIXTIME(timestamp) as date FROM track_times WHERE trackId = ? ORDER BY time ASC LIMIT 10',
+        [[
+            SELECT
+                tt.racerName,
+                tt.time,
+                tt.vehicleModel AS car,
+                tt.raceType,
+                tt.trackId,
+                rt.name AS trackName,
+                FROM_UNIXTIME(tt.timestamp) AS date
+            FROM track_times tt
+            LEFT JOIN race_tracks rt ON rt.raceid = tt.trackId
+            WHERE tt.trackId = ?
+            ORDER BY tt.timestamp DESC
+            LIMIT 30
+        ]],
         {trackId}
     ) or {}
 end
@@ -637,9 +651,22 @@ lib.callback.register('alves-racingapp:getScoreboard', function(src, trackName)
         return getBestTimesForTrack(track.raceid)
     end
 
-    -- Sem pista selecionada: retorna os melhores tempos globais. Assim o botão Scoreboard funciona no dashboard.
+    -- Sem pista selecionada: retorna as últimas corridas salvas no banco.
     return MySQL.query.await(
-        'SELECT racerName, time, vehicleModel as car, trackId, FROM_UNIXTIME(timestamp) as date FROM track_times ORDER BY time ASC LIMIT 20',
+        [[
+            SELECT
+                tt.racerName,
+                tt.time,
+                tt.vehicleModel AS car,
+                tt.raceType,
+                tt.trackId,
+                rt.name AS trackName,
+                FROM_UNIXTIME(tt.timestamp) AS date
+            FROM track_times tt
+            LEFT JOIN race_tracks rt ON rt.raceid = tt.trackId
+            ORDER BY tt.timestamp DESC
+            LIMIT 30
+        ]],
         {}
     ) or {}
 end)
