@@ -85,6 +85,11 @@ ensure ox_target
 # Ative manualmente só o que o modo racing realmente usa.
 ensure qbx_spawn
 ensure qbx_hud
+
+# Veículos JFx precisam subir antes do dashboard e das corridas,
+# senão /carros e lobby podem tentar spawnar modelos que ainda não existem no client.
+ensure [JFx]
+
 ensure qbx_vehiclekeys
 ensure alves-racing-core
 ensure cw-performance
