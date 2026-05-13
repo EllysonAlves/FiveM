@@ -263,6 +263,20 @@ local function broadcastLobby(lobby)
     end
 end
 
+local function broadcastGlobalLobbyAlert(lobby, racerName, sourcePlayer)
+    local data = {
+        lobbyId = lobby.id,
+        raceType = lobby.raceType,
+        racerName = racerName,
+        source = sourcePlayer,
+        secondsLeft = Config.LobbyCountdownSeconds or 60
+    }
+
+    for _, playerId in ipairs(GetPlayers()) do
+        TriggerClientEvent('alves-racingapp:client:globalLobbyAlert', tonumber(playerId), data)
+    end
+end
+
 local function pickWinningMap(lobby)
     local totals = {}
     for _, option in ipairs(lobby.mapOptions or {}) do
@@ -759,6 +773,8 @@ lib.callback.register('alves-racingapp:server:startQuickRace', function(src, rac
         return nil
     end
 
+    local normalizedRaceType = raceType == 'ranked' and 'ranked' or 'casual'
+    local existingLobby = raceLobbies[normalizedRaceType]
     local lobby = getOrCreateLobby(raceType)
     if not lobby then
         print('[Alves Racing] Não foi possível criar lobby: sem pistas ou veículos disponíveis')
@@ -776,6 +792,9 @@ lib.callback.register('alves-racingapp:server:startQuickRace', function(src, rac
     end
 
     broadcastLobby(lobby)
+    if not existingLobby then
+        broadcastGlobalLobbyAlert(lobby, racer, src)
+    end
     return buildLobbyState(lobby)
 end)
 

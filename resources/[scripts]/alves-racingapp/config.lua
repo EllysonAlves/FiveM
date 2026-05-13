@@ -40,7 +40,11 @@ Config.LapsByDistance = {
     { minDistance = 14000, laps = 0 } -- sprint
 }
 
+-- Quantos checkpoints entram no GPS/rota e quantos blips/props aparecem no mapa/mundo.
 Config.CheckpointsAhead = 8
+Config.MapBlipsAhead = 4
+Config.CheckpointPropsAhead = 4
+Config.CheckpointPropModel = 'prop_offroad_tyres02'
 Config.CheckpointBuffer = 5.0
 Config.ShowGpsRoute = true
 Config.UseRoadsForGps = true
