@@ -21,6 +21,10 @@ Config.MaxRaceTimeMs = 60 * 60 * 1000
 
 Config.RankedCompletionElo = 20
 
+-- Phase/ghost durante corrida: carros dos competidores não colidem entre si.
+-- Continua permitindo colisão com mapa/props, só remove batida player x player.
+Config.RaceVehiclePhase = true
+
 -- Lobby/fila de corrida rápida.
 Config.LobbyCountdownSeconds = 60
 Config.LobbyMapOptions = 3
