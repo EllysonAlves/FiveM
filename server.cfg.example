@@ -85,7 +85,10 @@ ensure ox_target
 # Ative manualmente só o que o modo racing realmente usa.
 ensure qbx_spawn
 ensure qbx_hud
+ensure qbx_vehiclekeys
 ensure alves-racing-core
+ensure cw-performance
+ensure cw-vehicledash
 ensure loadscreen
 ensure Renewed-Weathersync
 ensure [voice]
@@ -104,9 +107,7 @@ ensure alves-racingapp
 # Para reativar, mova de volta para [scripts] e comente o alves-racingapp
 # ============================================================
 
-# Scripts auxiliares antigos/telefone/garagens/apps ficam desativados no modo racing limpo.
-# ensure cw-performance
-# ensure cw-vehicledash
+# Telefone/garagens/apps ficam desativados no modo racing limpo.
 # ensure [npwd-apps]
 # ensure qbx_npwd
 # ensure npwd
