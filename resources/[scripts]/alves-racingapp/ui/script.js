@@ -41,6 +41,31 @@ function nuiPost(eventName, payload = {}) {
     }).catch(() => {});
 }
 
+function hexToRgb(hex) {
+    const clean = String(hex || '').replace('#', '').trim();
+    if (clean.length !== 6) return null;
+    const value = parseInt(clean, 16);
+    if (Number.isNaN(value)) return null;
+    return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
+}
+
+function mixHex(hex, target, amount) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return hex;
+    const t = target === 'dark' ? 0 : 255;
+    const mix = c => Math.round(c + (t - c) * amount).toString(16).padStart(2, '0');
+    return `#${mix(rgb.r)}${mix(rgb.g)}${mix(rgb.b)}`;
+}
+
+function applyTheme(theme = {}) {
+    const primary = theme.primary || '#8b5cf6';
+    const root = document.documentElement;
+    root.style.setProperty('--purple', primary);
+    root.style.setProperty('--purple-light', mixHex(primary, 'light', 0.18));
+    root.style.setProperty('--purple-dark', mixHex(primary, 'dark', 0.42));
+    if (theme.background) root.style.setProperty('--server-bg', theme.background);
+}
+
 window.addEventListener('message', function(event) {
     const data = event.data || {};
     switch (data.action) {
@@ -128,6 +153,7 @@ function setActiveMenu(label) {
 }
 
 function openTablet(data) {
+    applyTheme(data?.theme || {});
     removeClass('#tablet', 'hidden');
     const player = data?.player || {};
 
@@ -423,7 +449,7 @@ function updateProfile(data) {
 
 function displayScoreboard(data) {
     $$('.modal').forEach(m => m.classList.add('hidden'));
-    setText('#scoreboard-title', data?.trackName ? `SCOREBOARD - ${data.trackName}` : 'SCOREBOARD GLOBAL');
+    setText('#scoreboard-title', data?.title || (data?.trackName ? `SCOREBOARD - ${data.trackName}` : 'MINHAS CORRIDAS'));
     let html = '';
     if (Array.isArray(data?.times) && data.times.length) {
         data.times.forEach((entry, index) => {

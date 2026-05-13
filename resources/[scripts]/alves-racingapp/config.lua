@@ -5,12 +5,11 @@ Config = Config or {}
 
 Config.Debug = false
 
+-- Cor global do servidor. Altere o convar `alves:themePrimary` no server.cfg
+-- e as UIs derivam as variações claras/escuras automaticamente.
 Config.Theme = {
-    primary = '#8b5cf6',
-    primaryLight = '#a855f7',
-    primaryDark = '#4c1d95',
-    accent = '#fbbf24',
-    background = '#080712'
+    primary = GetConvar('alves:themePrimary', '#8b5cf6'),
+    background = GetConvar('alves:themeBackground', '#080712')
 }
 
 -- Corridas solo por enquanto. Quando montar lobby multiplayer, troque para o total real.

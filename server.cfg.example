@@ -61,6 +61,10 @@ set NPWD_AUDIO_TOKEN ""
 
 # loadscreen config
 setr loadscreen:externalShutdown true
+
+# Tema global Alves Racing: altere apenas estes campos para recolorir as UIs próprias.
+setr alves:themePrimary "#8b5cf6"
+setr alves:themeBackground "#080712"
 set loadscreen:primaryColor "#8b5cf6"
 set loadscreen:shadowColor "#080712cc"
 

@@ -44,6 +44,69 @@ local function addInsertField(columns, placeholders, values, column, value)
     end
 end
 
+local function ensureTrackTimesSchema()
+    local wanted = {
+        { name = 'raceSessionId', sql = 'ALTER TABLE track_times ADD COLUMN raceSessionId VARCHAR(64) NULL AFTER id' },
+        { name = 'trackName', sql = 'ALTER TABLE track_times ADD COLUMN trackName VARCHAR(120) NULL AFTER trackId' },
+        { name = 'citizenid', sql = 'ALTER TABLE track_times ADD COLUMN citizenid VARCHAR(80) NULL AFTER racerid' },
+        { name = 'vehicleDisplayName', sql = 'ALTER TABLE track_times ADD COLUMN vehicleDisplayName VARCHAR(80) NULL AFTER vehicleModel' },
+        { name = 'position', sql = 'ALTER TABLE track_times ADD COLUMN position INT NULL AFTER time' },
+        { name = 'totalRacers', sql = 'ALTER TABLE track_times ADD COLUMN totalRacers INT NULL AFTER position' },
+        { name = 'laps', sql = 'ALTER TABLE track_times ADD COLUMN laps INT NOT NULL DEFAULT 0 AFTER totalRacers' },
+        { name = 'checkpoints', sql = 'ALTER TABLE track_times ADD COLUMN checkpoints INT NOT NULL DEFAULT 0 AFTER laps' },
+        { name = 'bestLap', sql = 'ALTER TABLE track_times ADD COLUMN bestLap INT NULL AFTER checkpoints' },
+        { name = 'averageSpeedKmh', sql = 'ALTER TABLE track_times ADD COLUMN averageSpeedKmh DECIMAL(8,2) NULL AFTER bestLap' },
+        { name = 'finished', sql = 'ALTER TABLE track_times ADD COLUMN finished TINYINT(1) NOT NULL DEFAULT 1 AFTER averageSpeedKmh' },
+        { name = 'finishReason', sql = "ALTER TABLE track_times ADD COLUMN finishReason VARCHAR(32) NOT NULL DEFAULT 'completed' AFTER finished" },
+        { name = 'eloBefore', sql = 'ALTER TABLE track_times ADD COLUMN eloBefore INT NULL AFTER finishReason' },
+        { name = 'eloAfter', sql = 'ALTER TABLE track_times ADD COLUMN eloAfter INT NULL AFTER eloBefore' },
+        { name = 'eloDelta', sql = 'ALTER TABLE track_times ADD COLUMN eloDelta INT NULL AFTER eloAfter' },
+        { name = 'createdAt', sql = 'ALTER TABLE track_times ADD COLUMN createdAt DATETIME NULL DEFAULT CURRENT_TIMESTAMP AFTER timestamp' },
+    }
+
+    for _, column in ipairs(wanted) do
+        if not trackTimesHasColumn(column.name) then
+            MySQL.query(column.sql, {}, function(ok)
+                if ok then
+                    print(('[Alves Racing] ✅ Coluna track_times.%s criada'):format(column.name))
+                else
+                    print(('[Alves Racing] ⚠️ Não consegui criar track_times.%s automaticamente'):format(column.name))
+                end
+            end)
+            TrackTimesColumns[column.name] = true
+        end
+    end
+
+    MySQL.query("UPDATE track_times SET timestamp = COALESCE(createdAt, NOW()) WHERE timestamp IS NULL OR timestamp = '0000-00-00 00:00:00'", {})
+    MySQL.query('UPDATE track_times tt LEFT JOIN race_tracks rt ON rt.raceid = tt.trackId SET tt.trackName = COALESCE(tt.trackName, rt.name) WHERE tt.trackName IS NULL', {})
+    MySQL.query('CREATE INDEX IF NOT EXISTS idx_track_times_recent ON track_times (timestamp)', {})
+    MySQL.query('CREATE INDEX IF NOT EXISTS idx_track_times_racer_recent ON track_times (racerid, timestamp)', {})
+    MySQL.query('CREATE INDEX IF NOT EXISTS idx_track_times_citizen_recent ON track_times (citizenid, timestamp)', {})
+    MySQL.query('CREATE INDEX IF NOT EXISTS idx_track_times_track_recent ON track_times (trackId, timestamp)', {})
+end
+
+local function ensureVehiclePresetSchema()
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS alves_vehicle_presets (
+            id INT NOT NULL AUTO_INCREMENT,
+            citizenid VARCHAR(80) NOT NULL,
+            vehicleModel VARCHAR(80) NOT NULL,
+            preset LONGTEXT NOT NULL,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_alves_vehicle_preset (citizenid, vehicleModel),
+            KEY idx_alves_vehicle_preset_citizen (citizenid)
+        )
+    ]], {}, function(ok)
+        if ok then
+            print('[Alves Racing] ✅ Tabela alves_vehicle_presets OK')
+        else
+            print('[Alves Racing] ❌ ERRO ao preparar alves_vehicle_presets')
+        end
+    end)
+end
+
 local function buildTrackTimeSelect(whereSql, orderSql, limit)
     local trackNameSelect = trackTimesHasColumn('trackName') and 'COALESCE(tt.trackName, rt.name)' or 'rt.name'
     local dateSelect = trackTimesHasColumn('createdAt') and 'COALESCE(DATE_FORMAT(tt.createdAt, "%Y-%m-%d %H:%i:%s"), DATE_FORMAT(tt.timestamp, "%Y-%m-%d %H:%i:%s"))' or 'DATE_FORMAT(tt.timestamp, "%Y-%m-%d %H:%i:%s")'
@@ -115,6 +178,8 @@ MySQL.ready(function()
                         TrackTimesColumns[col.Field] = true
                     end
                     print(string.format('[Alves Racing] Colunas track_times: %s', table.concat(columns, ', ')))
+                    ensureTrackTimesSchema()
+                    ensureVehiclePresetSchema()
                 end
             end)
         else
@@ -692,6 +757,59 @@ lib.callback.register('alves-racingapp:getScoreboard', function(src, trackName)
         buildTrackTimeSelect('', 'ORDER BY tt.timestamp DESC', 30),
         {}
     ) or {}
+end)
+
+lib.callback.register('alves-racingapp:getMyRaceHistory', function(src)
+    local citizenId = getCitizenId(src)
+    if not citizenId then return {} end
+
+    if trackTimesHasColumn('citizenid') then
+        return MySQL.query.await(
+            buildTrackTimeSelect('WHERE tt.citizenid = ?', 'ORDER BY tt.timestamp DESC', 50),
+            {citizenId}
+        ) or {}
+    end
+
+    local racerData = MySQL.query.await('SELECT racerid FROM racer_names WHERE citizenid = ? AND active = 1', {citizenId})
+    local racerid = (racerData and racerData[1]) and racerData[1].racerid or nil
+    if not racerid then return {} end
+
+    return MySQL.query.await(
+        buildTrackTimeSelect('WHERE tt.racerid = ?', 'ORDER BY tt.timestamp DESC', 50),
+        {racerid}
+    ) or {}
+end)
+
+lib.callback.register('alves-racingapp:getVehiclePreset', function(src, vehicleModel)
+    local citizenId = getCitizenId(src)
+    vehicleModel = vehicleModel and tostring(vehicleModel):lower() or nil
+    if not citizenId or not vehicleModel or vehicleModel == '' then return nil end
+
+    local rows = MySQL.query.await(
+        'SELECT preset FROM alves_vehicle_presets WHERE citizenid = ? AND vehicleModel = ? LIMIT 1',
+        {citizenId, vehicleModel}
+    )
+
+    if not rows or not rows[1] or not rows[1].preset then return nil end
+    return json.decode(rows[1].preset)
+end)
+
+lib.callback.register('alves-racingapp:saveVehiclePreset', function(src, data)
+    local citizenId = getCitizenId(src)
+    data = data or {}
+    local vehicleModel = data.vehicleModel and tostring(data.vehicleModel):lower() or nil
+    local preset = data.preset
+    if not citizenId or not vehicleModel or vehicleModel == '' or type(preset) ~= 'table' then
+        return false
+    end
+
+    MySQL.insert.await([[
+        INSERT INTO alves_vehicle_presets (citizenid, vehicleModel, preset)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE preset = VALUES(preset), updatedAt = CURRENT_TIMESTAMP
+    ]], {citizenId, vehicleModel, json.encode(preset)})
+
+    return true
 end)
 
 lib.callback.register('alves-racingapp:getTracks', function(src)

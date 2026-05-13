@@ -1,4 +1,30 @@
 local spawnBlip = nil
+local pilotPedApplied = false
+
+local function applyPilotPed()
+    if not Config.ForcePilotPed or pilotPedApplied then return end
+
+    local modelName = Config.PilotPedModel or 's_m_y_xmech_01'
+    local model = joaat(modelName)
+    if not IsModelInCdimage(model) or not IsModelValid(model) then
+        print(('[Alves Racing Core] Ped inválido: %s'):format(modelName))
+        pilotPedApplied = true
+        return
+    end
+
+    RequestModel(model)
+    local timeout = GetGameTimer() + 8000
+    while not HasModelLoaded(model) and GetGameTimer() < timeout do Wait(50) end
+    if not HasModelLoaded(model) then
+        print(('[Alves Racing Core] Timeout carregando ped: %s'):format(modelName))
+        pilotPedApplied = true
+        return
+    end
+
+    SetPlayerModel(PlayerId(), model)
+    SetModelAsNoLongerNeeded(model)
+    pilotPedApplied = true
+end
 
 local function createSpawnBlip()
     if not Config.SpawnBlip or not Config.SpawnBlip.enabled or spawnBlip then return end
@@ -58,6 +84,7 @@ end
 CreateThread(function()
     createSpawnBlip()
     disableDispatch()
+    applyPilotPed()
 
     while true do
         local ped = PlayerPedId()

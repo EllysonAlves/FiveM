@@ -92,7 +92,8 @@ function openTablet()
         action = 'openTablet',
         data = {
             player = playerInfo,
-            onlineCount = onlineCount or 0
+            onlineCount = onlineCount or 0,
+            theme = Config.Theme
         }
     })
 end
@@ -408,26 +409,130 @@ function getUpcomingCheckpoints()
     return checkpoints
 end
 
-function applyFullTuning(vehicle)
+local VisualModTypes = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 48 }
+
+local function getRaceVehicleModels()
+    return lib.callback.await('alves-racingapp:getQuickRaceVehicles', false) or {}
+end
+
+local function getVehicleModelName(vehicle)
+    if not DoesEntityExist(vehicle) then return nil end
+    local modelHash = GetEntityModel(vehicle)
+    for _, modelName in ipairs(getRaceVehicleModels()) do
+        if GetHashKey(modelName) == modelHash then return modelName end
+    end
+    return string.lower(GetDisplayNameFromVehicleModel(modelHash) or '')
+end
+
+local function captureVehicleVisualPreset(vehicle)
+    if not DoesEntityExist(vehicle) then return nil end
+    SetVehicleModKit(vehicle, 0)
+
+    local primary, secondary = GetVehicleColours(vehicle)
+    local pearlescent, wheelColor = GetVehicleExtraColours(vehicle)
+    local neon = {}
+    for i = 0, 3 do neon[tostring(i)] = IsVehicleNeonLightEnabled(vehicle, i) end
+    local neonR, neonG, neonB = GetVehicleNeonLightsColour(vehicle)
+    local smokeR, smokeG, smokeB = GetVehicleTyreSmokeColor(vehicle)
+    local mods = {}
+    for _, modType in ipairs(VisualModTypes) do
+        mods[tostring(modType)] = {
+            index = GetVehicleMod(vehicle, modType),
+            customTires = GetVehicleModVariation(vehicle, modType) == 1
+        }
+    end
+
+    local extras = {}
+    for extraId = 0, 20 do
+        if DoesExtraExist(vehicle, extraId) then
+            extras[tostring(extraId)] = IsVehicleExtraTurnedOn(vehicle, extraId)
+        end
+    end
+
+    return {
+        primary = primary,
+        secondary = secondary,
+        pearlescent = pearlescent,
+        wheelColor = wheelColor,
+        windowTint = GetVehicleWindowTint(vehicle),
+        plateIndex = GetVehicleNumberPlateTextIndex(vehicle),
+        wheelType = GetVehicleWheelType(vehicle),
+        livery = GetVehicleLivery(vehicle),
+        xenonColor = GetVehicleXenonLightsColor(vehicle),
+        interiorColor = GetVehicleInteriorColor(vehicle),
+        dashboardColor = GetVehicleDashboardColor(vehicle),
+        neon = neon,
+        neonColor = { r = neonR, g = neonG, b = neonB },
+        tyreSmokeColor = { r = smokeR, g = smokeG, b = smokeB },
+        mods = mods,
+        extras = extras
+    }
+end
+
+local function applyVehicleVisualPreset(vehicle, preset)
+    if not DoesEntityExist(vehicle) or type(preset) ~= 'table' then return end
+    SetVehicleModKit(vehicle, 0)
+    if preset.wheelType then SetVehicleWheelType(vehicle, preset.wheelType) end
+    if preset.primary and preset.secondary then SetVehicleColours(vehicle, preset.primary, preset.secondary) end
+    if preset.pearlescent and preset.wheelColor then SetVehicleExtraColours(vehicle, preset.pearlescent, preset.wheelColor) end
+    if preset.windowTint then SetVehicleWindowTint(vehicle, preset.windowTint) end
+    if preset.plateIndex then SetVehicleNumberPlateTextIndex(vehicle, preset.plateIndex) end
+    if preset.interiorColor then SetVehicleInteriorColor(vehicle, preset.interiorColor) end
+    if preset.dashboardColor then SetVehicleDashboardColor(vehicle, preset.dashboardColor) end
+    if preset.xenonColor then SetVehicleXenonLightsColor(vehicle, preset.xenonColor) end
+    if preset.neon then
+        for key, enabled in pairs(preset.neon) do SetVehicleNeonLightEnabled(vehicle, tonumber(key), enabled == true) end
+    end
+    if preset.neonColor then SetVehicleNeonLightsColour(vehicle, preset.neonColor.r or 255, preset.neonColor.g or 255, preset.neonColor.b or 255) end
+    if preset.tyreSmokeColor then SetVehicleTyreSmokeColor(vehicle, preset.tyreSmokeColor.r or 255, preset.tyreSmokeColor.g or 255, preset.tyreSmokeColor.b or 255) end
+    if preset.mods then
+        for key, mod in pairs(preset.mods) do
+            if type(mod) == 'table' and mod.index and mod.index >= -1 then
+                SetVehicleMod(vehicle, tonumber(key), mod.index, mod.customTires == true)
+            end
+        end
+    end
+    if preset.livery and preset.livery >= 0 then SetVehicleLivery(vehicle, preset.livery) end
+    if preset.extras then
+        for key, enabled in pairs(preset.extras) do SetVehicleExtra(vehicle, tonumber(key), enabled and 0 or 1) end
+    end
+end
+
+local function applySavedVisualPreset(vehicle, modelName)
+    modelName = modelName and tostring(modelName):lower() or getVehicleModelName(vehicle)
+    if not modelName or modelName == '' then return end
+    local preset = lib.callback.await('alves-racingapp:getVehiclePreset', false, modelName)
+    if preset then applyVehicleVisualPreset(vehicle, preset) end
+end
+
+function applyRaceVehicleRules(vehicle)
     if not DoesEntityExist(vehicle) then return end
-    
-    SetVehicleMod(vehicle, 11, GetNumVehicleMods(vehicle, 11) - 1, false)
-    SetVehicleMod(vehicle, 12, GetNumVehicleMods(vehicle, 12) - 1, false)
-    SetVehicleMod(vehicle, 13, GetNumVehicleMods(vehicle, 13) - 1, false)
-    SetVehicleMod(vehicle, 15, GetNumVehicleMods(vehicle, 15) - 1, false)
-    SetVehicleMod(vehicle, 16, GetNumVehicleMods(vehicle, 16) - 1, false)
-    
-    ToggleVehicleMod(vehicle, 18, true)
-    
-    SetVehicleEnginePowerMultiplier(vehicle, 50.0)
-    SetVehicleEngineTorqueMultiplier(vehicle, 50.0)
-    
     SetEntityInvincible(vehicle, true)
     SetVehicleCanBeVisiblyDamaged(vehicle, false)
     SetVehicleBodyHealth(vehicle, 1000.0)
     SetVehicleEngineHealth(vehicle, 1000.0)
     SetVehiclePetrolTankHealth(vehicle, 1000.0)
 end
+
+RegisterCommand('salvarpreset', function()
+    local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+    if not DoesEntityExist(vehicle) then
+        lib.notify({ type = 'error', description = 'Entre em um carro de corrida para salvar o preset visual.' })
+        return
+    end
+    local modelName = getVehicleModelName(vehicle)
+    if not modelName or modelName == '' then
+        lib.notify({ type = 'error', description = 'Não consegui identificar o modelo desse veículo.' })
+        return
+    end
+    local ok = lib.callback.await('alves-racingapp:saveVehiclePreset', false, {
+        vehicleModel = modelName,
+        preset = captureVehicleVisualPreset(vehicle)
+    })
+    lib.notify({ type = ok and 'success' or 'error', description = ok and ('Preset visual salvo para ' .. modelName) or 'Falha ao salvar preset visual.' })
+end, false)
+
+TriggerEvent('chat:addSuggestion', '/salvarpreset', 'Salva o visual do carro atual para respawn/corridas')
 
 function startRaceSession(result)
     if not result then
@@ -488,7 +593,8 @@ function startRaceSession(result)
     SetVehicleEngineOn(veh, true, true, false)
     SetModelAsNoLongerNeeded(model)
 
-    applyFullTuning(veh)
+    applyRaceVehicleRules(veh)
+    applySavedVisualPreset(veh, requestedModel)
 
     -- CONGELAR VEÍCULO durante contagem
     FreezeEntityPosition(veh, true)
@@ -651,18 +757,21 @@ RegisterNUICallback('showScoreboard', function(data, cb)
     cb('ok')
     
     CreateThread(function()
-        local trackName = data.trackName or (CurrentRaceData.RaceName or nil)
-        
-        if not trackName then
-            lib.notify({ type = 'error', description = 'Nenhuma pista selecionada' })
-            return
+        local trackName = data and data.trackName or nil
+        local scoreboard = nil
+        local title = 'MINHAS CORRIDAS'
+
+        if trackName and trackName ~= '' then
+            scoreboard = lib.callback.await('alves-racingapp:getScoreboard', false, trackName)
+            title = ('SCOREBOARD - %s'):format(trackName)
+        else
+            scoreboard = lib.callback.await('alves-racingapp:getMyRaceHistory', false)
         end
-        
-        local scoreboard = lib.callback.await('alves-racingapp:getScoreboard', false, trackName)
         
         SendNUIMessage({
             action = 'showScoreboard',
             data = {
+                title = title,
                 trackName = trackName,
                 times = scoreboard
             }
@@ -824,7 +933,7 @@ CreateThread(function()
             local veh = GetVehiclePedIsIn(ped, false)
             
             if DoesEntityExist(veh) then
-                applyFullTuning(veh)
+                applyRaceVehicleRules(veh)
             end
         end
     end
