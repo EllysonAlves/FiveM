@@ -92,8 +92,6 @@ ensure [JFx]
 
 ensure qbx_vehiclekeys
 ensure alves-racing-core
-ensure cw-performance
-ensure cw-vehicledash
 ensure loadscreen
 ensure Renewed-Weathersync
 ensure [voice]
@@ -106,6 +104,9 @@ ensure [assets]
 # ==================== SISTEMA DE CORRIDAS ====================
 # Alves Racing App - sistema principal de corrida/ranking/ELO
 ensure alves-racingapp
+
+# Dashboard /carros usa a lista QuickRaceVehicles do alves-racingapp.
+ensure cw-vehicledash
 
 # CW Racing App - Backup/Referência (DESATIVADO)
 # Movido para: resources/[scripts-backup]/cw-racingapp

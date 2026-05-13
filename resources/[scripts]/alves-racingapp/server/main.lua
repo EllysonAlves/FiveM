@@ -707,6 +707,10 @@ lib.callback.register('alves-racingapp:getTracks', function(src)
     return tracks
 end)
 
+lib.callback.register('alves-racingapp:getQuickRaceVehicles', function(src)
+    return QuickRaceVehicles
+end)
+
 lib.callback.register('alves-racingapp:getMyProfile', function(src)
     print(string.format('[Alves Racing] getMyProfile chamado por source %d', src))
     
