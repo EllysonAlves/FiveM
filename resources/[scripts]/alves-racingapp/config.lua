@@ -28,10 +28,16 @@ Config.LobbyMapOptions = 3
 Config.LobbyVehicleOptions = 3
 
 -- Voltas automáticas por distância da pista no banco.
+-- Regra do Alves Racing:
+-- - pistas curtas viram circuito com mais voltas;
+-- - pistas médias viram circuito menor;
+-- - pistas longas viram sprint/ponto-a-ponto para não ficar corrida gigante com 3 voltas.
+-- laps = 0 significa sprint.
 Config.LapsByDistance = {
-    { minDistance = 15000, laps = 3 },
-    { minDistance = 8000, laps = 2 },
-    { minDistance = 0, laps = 0 } -- 0 = sprint
+    { maxDistance = 6000, laps = 3 },
+    { maxDistance = 10000, laps = 2 },
+    { maxDistance = 14000, laps = 1 },
+    { minDistance = 14000, laps = 0 } -- sprint
 }
 
 Config.CheckpointsAhead = 8

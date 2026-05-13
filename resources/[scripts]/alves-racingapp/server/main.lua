@@ -140,7 +140,12 @@ local function getAutoLaps(distance)
     distance = tonumber(distance) or 0
     local rules = Config.LapsByDistance or {}
     for _, rule in ipairs(rules) do
-        if distance >= (rule.minDistance or 0) then
+        local minDistance = rule.minDistance
+        local maxDistance = rule.maxDistance
+        local minOk = minDistance == nil or distance >= minDistance
+        local maxOk = maxDistance == nil or distance < maxDistance
+
+        if minOk and maxOk then
             return rule.laps or 0
         end
     end
