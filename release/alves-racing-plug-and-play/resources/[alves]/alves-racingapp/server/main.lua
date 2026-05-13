@@ -6,10 +6,17 @@ print('^2[Alves Racing]^0 Server iniciado!')
 -- ==================== CONFIGURAÇÃO ====================
 -- Apenas veículos Classe S (Super Cars)
 local QuickRaceVehicles = {
-    -- Lista vanilla para teste plug-and-play em qualquer servidor GTA/FiveM.
-    -- Se o servidor tiver carros custom, substitua pelos spawn names desejados.
-    'sultanrs', 'jester', 'elegy2', 'comet2', 'comet5', 'massacro', 'ninef', 'banshee',
-    'drafter', 'pariah', 'italigto', 'jugular', 'kuruma', 'feltzer2', 'schlagen', 'vstr'
+    -- JFx Super Cars
+    'arbitergtc', 'arbitergtn', 'carrion', 'carrionmech', 'cazador', 'cazadortcr',
+    'clubr', 'clubrhyc', 'elegyrh8c', 'elegyxa19', 'elegyxa19ven', 'flashgrs',
+    'growlerc', 'gstasp3', 'gstbanac1', 'gstbanac1b', 'gstbanac1c',
+    'gstbisc1', 'gstbisc1b', 'gstbisc1c', 'gstcdy2', 'gstcdy2b', 'gstcdy2c', 'gstcdy2d',
+    'gstcs24', 'gstevmr1', 'gstingnt1', 'gstingnt1b', 'gstpaladingt', 'gstpenf1',
+    'gstpmp7s1', 'gstpmp7s1b', 'gstpmp7s1c', 'gstpmp7s1d', 'gstraid3', 'gstrh5s2',
+    'gstsadlt5', 'gstsettimo1', 'gstslt1', 'gstsrs1', 'gsttorle1', 'gstturo1',
+    'gstvanguard1b', 'gstxsajest3reptile', 'gstyc1', 'hellfirec', 'nwjester',
+    's790', 'schlag', 'shenron', 'shinobid', 'sr8', 'str', 'strcoupe',
+    'taurion', 'trager', 'tragmech', 'vulture',
 }
 
 -- Sistema de Tiers ELO

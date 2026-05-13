@@ -4,6 +4,9 @@ ensure oxmysql
 ensure ox_lib
 ensure qbx_core
 
+# Veículos custom usados pelo Alves Racing
+ensure [JFx]
+
 # Opcional: necessario apenas para /tuning, /bennys, /custom e /customizar
 # ensure qbx_customs
 

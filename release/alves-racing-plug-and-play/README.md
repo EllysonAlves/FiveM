@@ -19,6 +19,7 @@ Obrigatórios:
 - `ox_lib`
 - `oxmysql`
 - banco MySQL/MariaDB configurado no servidor
+- pacote de veículos JFx iniciado antes do `alves-racingapp`
 
 Opcional:
 
@@ -47,6 +48,9 @@ Opcional:
 ensure oxmysql
 ensure ox_lib
 ensure qbx_core
+
+# Veículos custom usados nas corridas
+ensure [JFx]
 
 # Opcional, apenas para tuning visual
 # ensure qbx_customs
@@ -78,15 +82,21 @@ ensure alves-racingapp
 
 ## Carros do pacote
 
-Nesta versão de envio, a lista de carros foi trocada para veículos vanilla do GTA/FiveM para funcionar em servidor sem pacote JFx.
+O pacote já vai com a lista de veículos JFx em `QuickRaceVehicles`.
 
-Se o servidor tiver carros custom, edite:
+Garanta que o resource/grupo dos carros esteja iniciado antes do `alves-racingapp`:
+
+```cfg
+ensure [JFx]
+ensure alves-racing-core
+ensure alves-racingapp
+```
+
+Se ele quiser trocar/adicionar carros, edite:
 
 ```txt
 resources/[alves]/alves-racingapp/server/main.lua
 ```
-
-E substitua a lista `QuickRaceVehicles` pelos spawn names reais.
 
 ## Recursos principais
 
