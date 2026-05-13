@@ -7,8 +7,10 @@
 }
 
 :root{
-    --purple:#7c3aed;
+    --purple:#8b5cf6;
     --purple-light:#a855f7;
+    --purple-dark:#4c1d95;
+    --server-bg:#080712;
     --blue:#2563eb;
     --green:#16a34a;
     --orange:#d97706;
@@ -157,7 +159,7 @@ body::after{
     background:
         linear-gradient(
             135deg,
-            #7c3aed,
+            var(--purple),
             #9333ea
         );
 
@@ -476,8 +478,8 @@ body::after{
     background:
         linear-gradient(
             90deg,
-            #7c3aed,
-            #a855f7
+            var(--purple),
+            var(--purple-light)
         );
 }
 
@@ -580,7 +582,7 @@ body::after{
 }
 
 .ranked-btn{
-    background:linear-gradient(90deg,#7c3aed,#9333ea);
+    background:linear-gradient(90deg,var(--purple),#9333ea);
 }
 
 .casual-btn{
@@ -639,7 +641,7 @@ body::after{
 }
 
 .purple-icon{
-    background:linear-gradient(135deg,#7c3aed,#9333ea);
+    background:linear-gradient(135deg,var(--purple),#9333ea);
 }
 
 .yellow-icon{
@@ -826,7 +828,7 @@ body::after{
     position:absolute;
     inset:0;
     background:
-        linear-gradient(135deg, var(--tier-color, #a855f7), transparent 44%);
+        linear-gradient(135deg, var(--tier-color, var(--purple-light)), transparent 44%);
     opacity:.18;
     pointer-events:none;
 }
@@ -850,9 +852,9 @@ body::after{
     display:flex;
     align-items:center;
     justify-content:center;
-    border:1px solid var(--tier-color, #a855f7);
+    border:1px solid var(--tier-color, var(--purple-light));
     background:rgba(168,85,247,.12);
-    color:var(--tier-color, #a855f7);
+    color:var(--tier-color, var(--purple-light));
     font-size:12px;
     font-weight:700;
     letter-spacing:1px;
@@ -1391,7 +1393,7 @@ body::after{
 
 .race-subtitle{
     margin-top:3px;
-    color:#a855f7;
+    color:var(--purple-light);
     font-size:12px;
     font-weight:800;
     letter-spacing:1.6px;
@@ -1430,7 +1432,7 @@ body::after{
 }
 
 .race-value-accent{
-    color:#a855f7;
+    color:var(--purple-light);
     text-shadow:0 0 12px rgba(168,85,247,.42);
 }
 
@@ -1487,7 +1489,7 @@ body::after{
     display:flex;
     align-items:center;
     justify-content:center;
-    background:linear-gradient(135deg, #7c3aed, #c084fc);
+    background:linear-gradient(135deg, var(--purple), var(--purple-light));
     color:#fff;
     font-size:28px;
     font-weight:950;

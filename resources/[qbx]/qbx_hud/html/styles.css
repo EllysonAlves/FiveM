@@ -295,10 +295,12 @@ altitude {
 
 /* ==================== ALVES RACING THEME ==================== */
 :root {
+  --purple: #8b5cf6;
+  --purple-light: #a855f7;
   --alves-bg: #080712;
   --alves-panel: rgba(12, 10, 24, .88);
-  --alves-primary: #8b5cf6;
-  --alves-primary-light: #a855f7;
+  --alves-primary: var(--purple);
+  --alves-primary-light: var(--purple-light);
   --alves-accent: #fbbf24;
   --alves-text: #ffffff;
 }
@@ -370,7 +372,7 @@ div#openmenu,
 
 
 /* ==================== ALVES RACING SPEEDOMETER V2 ==================== */
-.text-gauge{ color:#8b5cf6 !important; }
+.text-gauge{ color:var(--purple) !important; }
 #veh-container{
   position:absolute;
   left:0;
@@ -451,7 +453,7 @@ speed:after{
   justify-content:center;
   background:
     radial-gradient(circle at center, rgba(9,10,18,.94) 0%, rgba(9,10,18,.88) 56%, transparent 57%),
-    conic-gradient(from 225deg, #c084fc 0deg, #a855f7 185deg, rgba(255,255,255,.14) 186deg 270deg, transparent 271deg);
+    conic-gradient(from 225deg, var(--purple-light) 0deg, var(--purple-light) 185deg, rgba(255,255,255,.14) 186deg 270deg, transparent 271deg);
   border:1px solid rgba(255,255,255,.08);
 }
 
@@ -546,7 +548,7 @@ speed:after{
 
 .alves-speed-unit{
   margin-bottom:4px;
-  color:#c084fc;
+  color:var(--purple-light);
   font-size:11px !important;
   font-weight:950;
   letter-spacing:2px;
@@ -564,7 +566,7 @@ speed:after{
 .alves-speed-fill{
   height:100%;
   border-radius:999px;
-  background:linear-gradient(90deg, #7c3aed, #c084fc);
+  background:linear-gradient(90deg, var(--purple), var(--purple-light));
   box-shadow:0 0 12px rgba(192,132,252,.55);
 }
 
@@ -642,7 +644,7 @@ speed:after{
   justify-content:center;
   background:
     radial-gradient(circle at center, rgba(8,9,15,.34) 0 48%, transparent 49%),
-    conic-gradient(from 225deg, #c084fc 0 var(--rpm), rgba(255,255,255,.18) var(--rpm) 72%, transparent 72% 100%);
+    conic-gradient(from 225deg, var(--purple-light) 0 var(--rpm), rgba(255,255,255,.18) var(--rpm) 72%, transparent 72% 100%);
   filter:drop-shadow(0 0 16px rgba(168,85,247,.36)) drop-shadow(0 8px 14px rgba(0,0,0,.50));
 }
 
@@ -745,7 +747,7 @@ speed:after{
 .alves-gauge-shell{
   background:
     radial-gradient(circle at center, rgba(8,9,15,.34) 0 48%, transparent 49%),
-    conic-gradient(from 225deg, #c084fc 0 var(--rpm, 0%), rgba(255,255,255,.20) var(--rpm, 0%) 72%, transparent 72% 100%) !important;
+    conic-gradient(from 225deg, var(--purple-light) 0 var(--rpm, 0%), rgba(255,255,255,.20) var(--rpm, 0%) 72%, transparent 72% 100%) !important;
 }
 
 
@@ -764,7 +766,7 @@ speed:after{
 }
 
 .alves-gauge-shell{
-  --rpm-color:#a855f7;
+  --rpm-color:var(--purple-light);
   width:136px !important;
   height:136px !important;
   background:
@@ -775,7 +777,7 @@ speed:after{
   overflow:hidden;
 }
 
-.alves-gauge-shell.normal{ --rpm-color:#a855f7; }
+.alves-gauge-shell.normal{ --rpm-color:var(--purple-light); }
 .alves-gauge-shell.warning{ --rpm-color:#fbbf24; }
 .alves-gauge-shell.redline{ --rpm-color:#ef4444; }
 
@@ -821,13 +823,13 @@ speed:after{
 }
 
 .alves-gauge-shell{
-  --rpm-color:#a855f7;
+  --rpm-color:var(--purple-light);
   background:
     radial-gradient(circle at center, rgba(8,9,15,.18) 0 48%, transparent 49%),
     conic-gradient(from 225deg, var(--rpm-color) 0 var(--rpm-deg, 0deg), rgba(255,255,255,.16) var(--rpm-deg, 0deg) 270deg, transparent 270deg 360deg) !important;
 }
 
-.alves-gauge-shell.normal{ --rpm-color:#a855f7; }
+.alves-gauge-shell.normal{ --rpm-color:var(--purple-light); }
 .alves-gauge-shell.warning{ --rpm-color:#fbbf24; }
 .alves-gauge-shell.redline{
   --rpm-color:#ef4444;
@@ -885,8 +887,8 @@ speed:after{
 }
 
 .ref-gauge{
-  --purple:#9b4dff;
-  --purple2:#c084fc;
+  --purple:var(--alves-primary);
+  --purple2:var(--purple-light);
   --speed-deg: calc((var(--speed, 0%) / 100) * 280deg);
   position:relative;
   width:360px;
@@ -953,7 +955,7 @@ speed:after{
   transform-origin:left center;
   transform:rotate(calc(220deg + var(--speed-deg)));
   border-radius:999px;
-  background:linear-gradient(90deg, rgba(155,77,255,0), #c084fc 40%, #fff 100%);
+  background:linear-gradient(90deg, rgba(155,77,255,0), var(--purple-light) 40%, #fff 100%);
   box-shadow:0 0 16px rgba(192,132,252,.85);
 }
 
@@ -1110,8 +1112,8 @@ speed:after{
 }
 
 .ref-gauge{
-  --purple:#9b4dff;
-  --purple2:#c084fc;
+  --purple:var(--alves-primary);
+  --purple2:var(--purple-light);
   --speed-deg: calc((var(--speed, 0%) / 100) * 276deg);
   position:relative;
   width:246px !important;
