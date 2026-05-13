@@ -11,6 +11,7 @@ local checkpointBlips = {}
 local checkpointProps = {}
 local startTime = 0
 local lapStartTime = 0
+local phasedVehicle = 0
 
 -- ==================== CONFIGURAÇÃO ====================
 -- Config vem de config.lua (shared_script). Mantemos fallback para compatibilidade.
@@ -25,6 +26,7 @@ Config.MapBlipsAhead = Config.MapBlipsAhead or 4
 Config.CheckpointPropsAhead = Config.CheckpointPropsAhead or Config.MapBlipsAhead or 4
 Config.CheckpointPropModel = Config.CheckpointPropModel or 'prop_offroad_tyres02'
 Config.DefaultTotalRacers = Config.DefaultTotalRacers or 1
+Config.RaceVehiclePhase = Config.RaceVehiclePhase ~= false
 Config.DrawTextSetup = Config.DrawTextSetup or {
     markerType = 1,
     minHeight = 1.0,
@@ -129,6 +131,7 @@ function finishRace()
 end
 
 function leaveRace()
+    disableRaceVehiclePhase()
     inRace = false
     clearCheckpoints()
     CurrentRaceData = {}
@@ -505,6 +508,25 @@ local function applySavedVisualPreset(vehicle, modelName)
     if preset then applyVehicleVisualPreset(vehicle, preset) end
 end
 
+function disableRaceVehiclePhase()
+    if not Config.RaceVehiclePhase then return end
+
+    local vehicle = phasedVehicle
+    if (not vehicle or vehicle == 0 or not DoesEntityExist(vehicle)) and CurrentRaceData.Vehicle then
+        vehicle = CurrentRaceData.Vehicle
+    end
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then
+        vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+    end
+
+    if DoesEntityExist(vehicle) then
+        SetNetworkVehicleAsGhost(vehicle, false)
+        ResetEntityAlpha(vehicle)
+    end
+
+    phasedVehicle = 0
+end
+
 function applyRaceVehicleRules(vehicle)
     if not DoesEntityExist(vehicle) then return end
     SetVehicleModKit(vehicle, 0)
@@ -604,6 +626,10 @@ function startRaceSession(result)
 
     applyRaceVehicleRules(veh)
     applySavedVisualPreset(veh, requestedModel)
+    if Config.RaceVehiclePhase then
+        phasedVehicle = veh
+        SetNetworkVehicleAsGhost(veh, true)
+    end
 
     -- CONGELAR VEÍCULO durante contagem
     FreezeEntityPosition(veh, true)
@@ -933,6 +959,46 @@ function initRacingHudThread()
 end
 
 -- ==================== VEHICLE PROTECTION ====================
+CreateThread(function()
+    while true do
+        if Config.RaceVehiclePhase and inRace then
+            local ped = PlayerPedId()
+            local veh = GetVehiclePedIsIn(ped, false)
+
+            if DoesEntityExist(veh) then
+                if phasedVehicle ~= veh then
+                    if phasedVehicle ~= 0 and DoesEntityExist(phasedVehicle) then
+                        SetNetworkVehicleAsGhost(phasedVehicle, false)
+                        ResetEntityAlpha(phasedVehicle)
+                    end
+
+                    phasedVehicle = veh
+                    SetNetworkVehicleAsGhost(veh, true)
+                else
+                    -- Mantém o ghost ativo caso outro recurso/native tente restaurar o estado.
+                    SetNetworkVehicleAsGhost(veh, true)
+                end
+
+                for _, player in ipairs(GetActivePlayers()) do
+                    if player ~= PlayerId() then
+                        local otherPed = GetPlayerPed(player)
+                        local otherVeh = GetVehiclePedIsIn(otherPed, false)
+
+                        if DoesEntityExist(otherVeh) and otherVeh ~= veh then
+                            SetEntityNoCollisionEntity(veh, otherVeh, true)
+                            SetEntityNoCollisionEntity(otherVeh, veh, true)
+                        end
+                    end
+                end
+            end
+
+            Wait(0)
+        else
+            Wait(500)
+        end
+    end
+end)
+
 CreateThread(function()
     while true do
         Wait(1000)
