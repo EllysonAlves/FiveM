@@ -8,6 +8,7 @@ local inLobby = false
 local lobbyOpen = false
 local CurrentRaceData = {}
 local checkpointBlips = {}
+local checkpointProps = {}
 local startTime = 0
 local lapStartTime = 0
 
@@ -20,6 +21,9 @@ Config.ShowGpsRoute = Config.ShowGpsRoute ~= false
 Config.UseRoadsForGps = Config.UseRoadsForGps ~= false
 Config.GpsColor = Config.GpsColor or 83
 Config.BlipColor = Config.BlipColor or 85
+Config.MapBlipsAhead = Config.MapBlipsAhead or 4
+Config.CheckpointPropsAhead = Config.CheckpointPropsAhead or Config.MapBlipsAhead or 4
+Config.CheckpointPropModel = Config.CheckpointPropModel or 'prop_offroad_tyres02'
 Config.DefaultTotalRacers = Config.DefaultTotalRacers or 1
 Config.DrawTextSetup = Config.DrawTextSetup or {
     markerType = 1,
@@ -143,6 +147,14 @@ function clearCheckpoints()
         end
     end
     checkpointBlips = {}
+
+    for _, prop in pairs(checkpointProps) do
+        if DoesEntityExist(prop) then
+            SetEntityAsMissionEntity(prop, true, true)
+            DeleteObject(prop)
+        end
+    end
+    checkpointProps = {}
     
     -- Limpar GPS route
     ClearGpsCustomRoute()
@@ -164,15 +176,108 @@ end
 
 function setupBlipsForRace()
     clearCheckpoints()
-    for k, v in pairs(CurrentRaceData.Checkpoints) do
-        checkpointBlips[k] = CreateCheckpointBlip(v.coords, k)
-    end
-    
-    if checkpointBlips[CurrentRaceData.CurrentCheckpoint + 1] then
-        nextBlip(checkpointBlips[CurrentRaceData.CurrentCheckpoint + 1])
-    end
-    
+    refreshCheckpointMarkers()
     updateGpsForRace()
+end
+
+function getCheckpointDataByRaceIndex(index, totalCheckpoints)
+    if CurrentRaceData.TotalLaps == 0 and index > totalCheckpoints then
+        return nil, nil
+    end
+
+    if CurrentRaceData.Lap > 0 and CurrentRaceData.Lap == CurrentRaceData.TotalLaps then
+        if index - 1 == totalCheckpoints then
+            return CurrentRaceData.Checkpoints[1], 1
+        elseif index > totalCheckpoints then
+            return nil, nil
+        end
+    end
+
+    local checkpointIndex = (index - 1) % totalCheckpoints + 1
+    return CurrentRaceData.Checkpoints[checkpointIndex], checkpointIndex
+end
+
+function loadCheckpointPropModel()
+    local model = GetHashKey(Config.CheckpointPropModel)
+    if not IsModelInCdimage(model) then
+        print(('[Alves Racing] Prop de checkpoint inválido: %s'):format(Config.CheckpointPropModel))
+        return nil
+    end
+
+    RequestModel(model)
+    local timeout = GetGameTimer() + 2000
+    while not HasModelLoaded(model) and GetGameTimer() < timeout do
+        Wait(10)
+    end
+
+    if not HasModelLoaded(model) then
+        print(('[Alves Racing] Falha ao carregar prop de checkpoint: %s'):format(Config.CheckpointPropModel))
+        return nil
+    end
+
+    return model
+end
+
+function createCheckpointProp(coords, heading)
+    local model = loadCheckpointPropModel()
+    if not model then return nil end
+
+    local prop = CreateObject(model, coords.x, coords.y, (coords.z or 0.0) - 0.15, false, false, false)
+    if DoesEntityExist(prop) then
+        SetEntityHeading(prop, heading or 0.0)
+        FreezeEntityPosition(prop, true)
+        SetEntityCollision(prop, false, false)
+        SetEntityAlpha(prop, 235, false)
+        return prop
+    end
+
+    return nil
+end
+
+function refreshCheckpointMarkers()
+    for _, blip in pairs(checkpointBlips) do
+        if DoesBlipExist(blip) then
+            SetBlipRoute(blip, false)
+            RemoveBlip(blip)
+        end
+    end
+    checkpointBlips = {}
+
+    for _, prop in pairs(checkpointProps) do
+        if DoesEntityExist(prop) then
+            SetEntityAsMissionEntity(prop, true, true)
+            DeleteObject(prop)
+        end
+    end
+    checkpointProps = {}
+
+    local totalCheckpoints = #CurrentRaceData.Checkpoints
+    local currentIndex = CurrentRaceData.CurrentCheckpoint + 1
+    local amount = Config.MapBlipsAhead or 4
+    local propsAhead = Config.CheckpointPropsAhead or amount
+
+    for i = 0, amount - 1 do
+        local raceIndex = currentIndex + i
+        local checkpointData, checkpointIndex = getCheckpointDataByRaceIndex(raceIndex, totalCheckpoints)
+        if not checkpointData then break end
+
+        local blip = CreateCheckpointBlip(checkpointData.coords, checkpointIndex)
+        if i == 0 then
+            nextBlip(blip)
+        end
+        checkpointBlips[raceIndex] = blip
+
+        if i < propsAhead and checkpointData.offset and checkpointData.offset.left and checkpointData.offset.right then
+            local left = checkpointData.offset.left
+            local right = checkpointData.offset.right
+            local heading = GetHeadingFromVector_2d(right.x - left.x, right.y - left.y)
+            local leftProp = createCheckpointProp(left, heading)
+            local rightProp = createCheckpointProp(right, heading)
+
+            if leftProp then checkpointProps[#checkpointProps + 1] = leftProp end
+            if rightProp then checkpointProps[#checkpointProps + 1] = rightProp end
+        end
+    end
 end
 
 function updateGpsForRace()
@@ -635,9 +740,8 @@ function initRacingHudThread()
                     if CurrentRaceData.TotalLaps == 0 then
                         if CurrentRaceData.CurrentCheckpoint + 1 < #CurrentRaceData.Checkpoints then
                             CurrentRaceData.CurrentCheckpoint = CurrentRaceData.CurrentCheckpoint + 1
-                            passedBlip(checkpointBlips[CurrentRaceData.CurrentCheckpoint])
-                            nextBlip(checkpointBlips[CurrentRaceData.CurrentCheckpoint + 1])
                             updateGpsForRace()
+                            refreshCheckpointMarkers()
                             lib.notify({ type = 'success', description = 'Checkpoint!' })
                         else
                             lib.notify({ type = 'success', description = '🏁 Corrida finalizada!' })
@@ -659,20 +763,13 @@ function initRacingHudThread()
                                 
                                 lib.notify({ type = 'inform', description = string.format('Volta %d/%d', CurrentRaceData.Lap, CurrentRaceData.TotalLaps) })
                                 
-                                passedBlip(checkpointBlips[1])
-                                nextBlip(checkpointBlips[2])
                                 updateGpsForRace()
+                                refreshCheckpointMarkers()
                             end
                         else
                             CurrentRaceData.CurrentCheckpoint = CurrentRaceData.CurrentCheckpoint + 1
-                            passedBlip(checkpointBlips[CurrentRaceData.CurrentCheckpoint])
-                            
-                            if CurrentRaceData.CurrentCheckpoint ~= #CurrentRaceData.Checkpoints then
-                                nextBlip(checkpointBlips[CurrentRaceData.CurrentCheckpoint + 1])
-                            else
-                                nextBlip(checkpointBlips[1])
-                            end
                             updateGpsForRace()
+                            refreshCheckpointMarkers()
                         end
                     end
                 end
