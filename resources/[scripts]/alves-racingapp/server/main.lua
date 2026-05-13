@@ -30,6 +30,55 @@ local ELO_TIERS = {
 local Tracks = {}
 local activeRaces = {}
 local raceLobbies = {}
+local TrackTimesColumns = {}
+
+local function trackTimesHasColumn(column)
+    return TrackTimesColumns[column] == true
+end
+
+local function addInsertField(columns, placeholders, values, column, value)
+    if trackTimesHasColumn(column) then
+        columns[#columns + 1] = column
+        placeholders[#placeholders + 1] = '?'
+        values[#values + 1] = value
+    end
+end
+
+local function buildTrackTimeSelect(whereSql, orderSql, limit)
+    local trackNameSelect = trackTimesHasColumn('trackName') and 'COALESCE(tt.trackName, rt.name)' or 'rt.name'
+    local dateSelect = trackTimesHasColumn('createdAt') and 'COALESCE(DATE_FORMAT(tt.createdAt, "%Y-%m-%d %H:%i:%s"), DATE_FORMAT(tt.timestamp, "%Y-%m-%d %H:%i:%s"))' or 'DATE_FORMAT(tt.timestamp, "%Y-%m-%d %H:%i:%s")'
+    local optional = {}
+
+    if trackTimesHasColumn('raceSessionId') then optional[#optional + 1] = 'tt.raceSessionId' end
+    if trackTimesHasColumn('citizenid') then optional[#optional + 1] = 'tt.citizenid' end
+    if trackTimesHasColumn('vehicleDisplayName') then optional[#optional + 1] = 'tt.vehicleDisplayName' end
+    if trackTimesHasColumn('position') then optional[#optional + 1] = 'tt.position' end
+    if trackTimesHasColumn('totalRacers') then optional[#optional + 1] = 'tt.totalRacers' end
+    if trackTimesHasColumn('laps') then optional[#optional + 1] = 'tt.laps' end
+    if trackTimesHasColumn('checkpoints') then optional[#optional + 1] = 'tt.checkpoints' end
+    if trackTimesHasColumn('bestLap') then optional[#optional + 1] = 'tt.bestLap' end
+    if trackTimesHasColumn('averageSpeedKmh') then optional[#optional + 1] = 'tt.averageSpeedKmh' end
+    if trackTimesHasColumn('finishReason') then optional[#optional + 1] = 'tt.finishReason' end
+
+    local optionalSql = #optional > 0 and (',\n                ' .. table.concat(optional, ',\n                ')) or ''
+
+    return ([[
+            SELECT
+                tt.racerName,
+                tt.time,
+                tt.vehicleModel AS car,
+                tt.carClass,
+                tt.raceType,
+                tt.trackId,
+                %s AS trackName,
+                %s AS date%s
+            FROM track_times tt
+            LEFT JOIN race_tracks rt ON rt.raceid = tt.trackId
+            %s
+            %s
+            LIMIT %d
+        ]]):format(trackNameSelect, dateSelect, optionalSql, whereSql or '', orderSql or 'ORDER BY tt.timestamp DESC', limit or 30)
+end
 
 -- ==================== INICIALIZAÇÃO ====================
 MySQL.ready(function()
@@ -63,6 +112,7 @@ MySQL.ready(function()
                     local columns = {}
                     for _, col in ipairs(cols) do
                         table.insert(columns, col.Field)
+                        TrackTimesColumns[col.Field] = true
                     end
                     print(string.format('[Alves Racing] Colunas track_times: %s', table.concat(columns, ', ')))
                 end
@@ -419,21 +469,7 @@ end
 local function getBestTimesForTrack(trackId)
     if not trackId then return {} end
     return MySQL.query.await(
-        [[
-            SELECT
-                tt.racerName,
-                tt.time,
-                tt.vehicleModel AS car,
-                tt.raceType,
-                tt.trackId,
-                rt.name AS trackName,
-                FROM_UNIXTIME(tt.timestamp) AS date
-            FROM track_times tt
-            LEFT JOIN race_tracks rt ON rt.raceid = tt.trackId
-            WHERE tt.trackId = ?
-            ORDER BY tt.timestamp DESC
-            LIMIT 30
-        ]],
+        buildTrackTimeSelect('WHERE tt.trackId = ?', 'ORDER BY tt.timestamp DESC', 30),
         {trackId}
     ) or {}
 end
@@ -653,20 +689,7 @@ lib.callback.register('alves-racingapp:getScoreboard', function(src, trackName)
 
     -- Sem pista selecionada: retorna as últimas corridas salvas no banco.
     return MySQL.query.await(
-        [[
-            SELECT
-                tt.racerName,
-                tt.time,
-                tt.vehicleModel AS car,
-                tt.raceType,
-                tt.trackId,
-                rt.name AS trackName,
-                FROM_UNIXTIME(tt.timestamp) AS date
-            FROM track_times tt
-            LEFT JOIN race_tracks rt ON rt.raceid = tt.trackId
-            ORDER BY tt.timestamp DESC
-            LIMIT 30
-        ]],
+        buildTrackTimeSelect('', 'ORDER BY tt.timestamp DESC', 30),
         {}
     ) or {}
 end)
@@ -896,6 +919,8 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
         print(('[Alves Racing] ERRO: nome de pista divergente. client=%s server=%s'):format(tostring(data.raceName), tostring(race.trackName)))
         return
     end
+    race.finishCount = (race.finishCount or 0) + 1
+    local finishPosition = race.finishCount
     participant.finished = true
     
     print(string.format('[Alves Racing] citizenId: %s', citizenId))
@@ -931,9 +956,41 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
     local racerData = MySQL.query.await('SELECT racerid FROM racer_names WHERE citizenid = ? AND active = 1', {citizenId})
     local racerid = (racerData and racerData[1]) and racerData[1].racerid or 0
     
+    local vehicleModel = data.vehicle or participant.vehicleModel or 'Unknown'
+    local raceType = race.raceType or data.raceType or 'casual'
+    local totalRacers = race.totalRacers or countTable(race.participants)
+    local totalLaps = tonumber(data.laps) or race.laps or 0
+    local totalCheckpoints = tonumber(data.checkpoints) or (race.checkpoints and #race.checkpoints) or 0
+    local bestLap = tonumber(data.bestLap) or 0
+    local timestamp = os.date('%Y-%m-%d %H:%M:%S')
+    local avgSpeed = nil
+    if track.distance and tonumber(track.distance) and totalTime > 0 then
+        local distanceKm = tonumber(track.distance) / 1000
+        local multiplier = totalLaps > 0 and totalLaps or 1
+        avgSpeed = math.floor(((distanceKm * multiplier) / (totalTime / 3600000)) * 100) / 100
+    end
+
+    local columns = { 'trackId', 'racerName', 'racerid', 'carClass', 'vehicleModel', 'raceType', 'time', 'timestamp' }
+    local placeholders = { '?', '?', '?', '?', '?', '?', '?', '?' }
+    local values = { track.raceid, racerName, racerid, 'S', vehicleModel, raceType, totalTime, timestamp }
+
+    addInsertField(columns, placeholders, values, 'raceSessionId', data.raceId)
+    addInsertField(columns, placeholders, values, 'trackName', track.name)
+    addInsertField(columns, placeholders, values, 'citizenid', citizenId)
+    addInsertField(columns, placeholders, values, 'vehicleDisplayName', vehicleModel)
+    addInsertField(columns, placeholders, values, 'position', finishPosition)
+    addInsertField(columns, placeholders, values, 'totalRacers', totalRacers)
+    addInsertField(columns, placeholders, values, 'laps', totalLaps)
+    addInsertField(columns, placeholders, values, 'checkpoints', totalCheckpoints)
+    addInsertField(columns, placeholders, values, 'bestLap', bestLap)
+    addInsertField(columns, placeholders, values, 'averageSpeedKmh', avgSpeed)
+    addInsertField(columns, placeholders, values, 'finished', 1)
+    addInsertField(columns, placeholders, values, 'finishReason', 'completed')
+    addInsertField(columns, placeholders, values, 'createdAt', timestamp)
+
     local success = MySQL.insert.await(
-        'INSERT INTO track_times (trackId, racerName, racerid, carClass, vehicleModel, raceType, time, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        {track.raceid, racerName, racerid, 'S', data.vehicle or participant.vehicleModel or 'Unknown', race.raceType or data.raceType or 'casual', totalTime, os.time()}
+        ('INSERT INTO track_times (%s) VALUES (%s)'):format(table.concat(columns, ', '), table.concat(placeholders, ', ')),
+        values
     )
     
     if success then

@@ -117,6 +117,8 @@ function finishRace()
         raceName = raceName,
         totalTime = finalTime,
         laps = CurrentRaceData.TotalLaps,
+        checkpoints = CurrentRaceData.TotalCheckpoints or #(CurrentRaceData.Checkpoints or {}),
+        bestLap = CurrentRaceData.BestLap or 0,
         vehicle = vehicleName,
         raceType = raceType
     })
