@@ -18,6 +18,11 @@ local nitroLastUsed = 0
 local nitroSoundId = nil
 local nitroMode = 'balanced'
 local nitroFlameEffects = {}
+local tireTemp = 45.0
+local tireWear = 0.0
+local tireGrip = 0.82
+local tireHandlingVehicle = 0
+local tireBaseHandling = nil
 
 local nitroConfig = {
     rechargePerSecond = 10.0,
@@ -543,7 +548,7 @@ end
 local function playNitroSound(vehicle)
     if nitroSoundId then return end
     nitroSoundId = GetSoundId()
-    PlaySoundFromEntity(nitroSoundId, 'Flare', vehicle, 'DLC_HEISTS_BIOLAB_FINALE_SOUNDS', false, 0)
+    PlaySoundFrontend(nitroSoundId, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', true)
 end
 
 local function stopNitroSound()
@@ -807,6 +812,9 @@ local function updateVehicleHud(data)
             nitro = data[12],
             nitroActive = data[13],
             nitroMode = data[14],
+            tireTemp = data[15],
+            tireGrip = data[16],
+            tireWear = data[17],
         })
     end
 end
@@ -821,6 +829,98 @@ local function getFuelLevel(vehicle)
         lastFuelCheck = math.floor(GetVehicleFuelLevel(vehicle))
     end
     return lastFuelCheck
+end
+
+
+local function resetTireHandling(vehicle)
+    if tireHandlingVehicle ~= 0 and tireBaseHandling and DoesEntityExist(tireHandlingVehicle) then
+        SetVehicleHandlingFloat(tireHandlingVehicle, 'CHandlingData', 'fTractionCurveMax', tireBaseHandling.tractionMax)
+        SetVehicleHandlingFloat(tireHandlingVehicle, 'CHandlingData', 'fTractionCurveMin', tireBaseHandling.tractionMin)
+        SetVehicleHandlingFloat(tireHandlingVehicle, 'CHandlingData', 'fBrakeForce', tireBaseHandling.brakeForce)
+    end
+
+    if vehicle and vehicle ~= tireHandlingVehicle then
+        tireTemp = 45.0
+        tireWear = 0.0
+        tireGrip = 0.82
+    end
+
+    tireHandlingVehicle = 0
+    tireBaseHandling = nil
+end
+
+local function ensureTireHandlingBase(vehicle)
+    if tireHandlingVehicle == vehicle and tireBaseHandling then return end
+
+    resetTireHandling(vehicle)
+    tireHandlingVehicle = vehicle
+    tireBaseHandling = {
+        tractionMax = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMax'),
+        tractionMin = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMin'),
+        brakeForce = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fBrakeForce'),
+    }
+end
+
+local function getTireGripFactor(temp, wear)
+    local tempFactor
+    if temp < 55.0 then
+        tempFactor = 0.82 + ((temp / 55.0) * 0.13) -- frio: 0.82 → 0.95
+    elseif temp <= 95.0 then
+        tempFactor = 1.0 -- janela ideal
+    elseif temp <= 120.0 then
+        tempFactor = 1.0 - (((temp - 95.0) / 25.0) * 0.13) -- quente: até 0.87
+    else
+        tempFactor = 0.84
+    end
+
+    local wearFactor = 1.0 - math.min(0.18, (wear / 100.0) * 0.18)
+    return math.max(0.72, math.min(1.04, tempFactor * wearFactor))
+end
+
+local function updateTireSystem(vehicle, delta)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) or GetPedInVehicleSeat(vehicle, -1) ~= cache.ped then
+        resetTireHandling(vehicle)
+        return
+    end
+
+    ensureTireHandlingBase(vehicle)
+
+    local speed = GetEntitySpeed(vehicle) * 3.6
+    local steering = math.abs(GetVehicleSteeringAngle(vehicle) or 0.0)
+    local handbrake = IsControlPressed(0, 76)
+    local burnout = IsVehicleInBurnout(vehicle)
+    local airborne = IsEntityInAir(vehicle)
+
+    local heatGain = 0.0
+    if speed > 18.0 then
+        heatGain += math.min(11.0, (speed / 120.0) * 2.2)
+    end
+    if speed > 35.0 and steering > 12.0 then
+        heatGain += math.min(24.0, (steering / 35.0) * (speed / 80.0) * 9.0)
+    end
+    if handbrake and speed > 25.0 then heatGain += 16.0 end
+    if burnout then heatGain += 28.0 end
+    if airborne then heatGain *= 0.2 end
+
+    local cooling = 4.2
+    if speed > 70.0 and steering < 8.0 and not handbrake then cooling += 3.5 end
+    if speed < 10.0 then cooling += 2.0 end
+
+    tireTemp = math.max(20.0, math.min(135.0, tireTemp + ((heatGain - cooling) * delta)))
+
+    local wearGain = 0.0
+    if tireTemp > 105.0 then wearGain += (tireTemp - 105.0) * 0.018 end
+    if speed > 45.0 and steering > 18.0 then wearGain += 0.11 end
+    if burnout then wearGain += 0.28 end
+    if handbrake and speed > 35.0 then wearGain += 0.10 end
+    tireWear = math.max(0.0, math.min(100.0, tireWear + (wearGain * delta)))
+
+    tireGrip = getTireGripFactor(tireTemp, tireWear)
+
+    local brakeFactor = math.max(0.72, tireGrip - math.min(0.12, tireWear / 850.0))
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMax', tireBaseHandling.tractionMax * tireGrip)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMin', tireBaseHandling.tractionMin * tireGrip)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fBrakeForce', tireBaseHandling.brakeForce * brakeFactor)
 end
 
 -- HUD Update loop
@@ -941,6 +1041,7 @@ CreateThread(function()
                     sharedConfig.menu.isCineamticModeChecked,
                     dev,
                 })
+                updateTireSystem(cache.vehicle, 0.016)
                 updateVehicleHud({
                     show,
                     IsPauseMenuActive(),
@@ -956,6 +1057,9 @@ CreateThread(function()
                     math.floor(nitroLevel + 0.5),
                     nitroActive,
                     nitroMode,
+                    math.floor(tireTemp + 0.5),
+                    math.floor(tireGrip * 100 + 0.5),
+                    math.floor(tireWear + 0.5),
                 })
                 showAltitude = false
                 showSeatbelt = true
@@ -970,11 +1074,15 @@ CreateThread(function()
                         nitro = math.floor(nitroLevel + 0.5),
                         nitroActive = 0,
                         nitroMode = nitroMode,
+                        tireTemp = math.floor(tireTemp + 0.5),
+                        tireGrip = math.floor(tireGrip * 100 + 0.5),
+                        tireWear = math.floor(tireWear + 0.5),
                     })
                     nitroKeyHeld = false
                     nitroActive = 0
                     stopAllNitroFlames()
                     stopNitroSound()
+                    resetTireHandling(cache.vehicle)
                     cruiseOn = false
                 end
                 DisplayRadar(sharedConfig.menu.isOutMapChecked)

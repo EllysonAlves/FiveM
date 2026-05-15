@@ -328,6 +328,11 @@
                             <div class="ref-rpm-caption">RPM x1000</div>
                             <div class="ref-speed">{{ speed }}</div>
                             <div class="ref-unit">MPH</div>
+                            <div class="ref-tire" :class="tireState">
+                                <span>PNEU</span>
+                                <strong>{{ tireTemp }}°C</strong>
+                                <em>{{ tireGrip }}%</em>
+                            </div>
                         </div>
                     </div>
                 </div>

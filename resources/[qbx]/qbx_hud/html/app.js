@@ -956,6 +956,9 @@ const vehHud = {
       nitro: 100,
       nitroActive: false,
       nitroMode: 'balanced',
+      tireTemp: 45,
+      tireGrip: 82,
+      tireWear: 0,
       showSquareB: 0,
       show: false,
       showAltitude: true,
@@ -1014,6 +1017,12 @@ const vehHud = {
     nitroModeLabel() {
       return this.nitroPalette.label;
     },
+    tireState() {
+      if (this.tireWear >= 70) return 'worn';
+      if (this.tireTemp < 55) return 'cold';
+      if (this.tireTemp > 105) return 'hot';
+      return 'ideal';
+    },
     beltText() {
       return this.seatbelt === 1 ? 'ON' : 'OFF';
     },
@@ -1031,6 +1040,9 @@ const vehHud = {
       this.nitro = Math.max(0, Math.min(100, Math.round(data.nitro ?? this.nitro ?? 100)));
       this.nitroActive = data.nitroActive === 1 || data.nitroActive === true;
       this.nitroMode = data.nitroMode || this.nitroMode || 'balanced';
+      this.tireTemp = Math.max(0, Math.min(160, Math.round(data.tireTemp ?? this.tireTemp ?? 45)));
+      this.tireGrip = Math.max(0, Math.min(120, Math.round(data.tireGrip ?? this.tireGrip ?? 82)));
+      this.tireWear = Math.max(0, Math.min(100, Math.round(data.tireWear ?? this.tireWear ?? 0)));
       this.showSeatbelt = data.showSeatbelt;
       this.showAltitude = data.showAltitude;
       this.showSquareB = data.showSquareB;
