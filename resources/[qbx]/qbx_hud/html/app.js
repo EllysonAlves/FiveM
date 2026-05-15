@@ -958,7 +958,7 @@ window.alvesNitroAudio = (() => {
     let smoothed = 0;
     for (let i = 0; i < data.length; i++) {
       smoothed = (smoothed * 0.985) + ((Math.random() * 2 - 1) * 0.015);
-      data[i] = smoothed * 2.8;
+      data[i] = smoothed * 3.1;
     }
     return buffer;
   }
@@ -980,14 +980,14 @@ window.alvesNitroAudio = (() => {
     airFilter.frequency.value = 1250;
     airFilter.Q.value = 0.55;
     airGain = ctx.createGain();
-    airGain.gain.value = 0.22;
+    airGain.gain.value = 0.28;
 
     bodyFilter = ctx.createBiquadFilter();
     bodyFilter.type = 'lowpass';
     bodyFilter.frequency.value = 260;
     bodyFilter.Q.value = 0.45;
     bodyGain = ctx.createGain();
-    bodyGain.gain.value = 0.10;
+    bodyGain.gain.value = 0.13;
 
     noiseSource.connect(airFilter);
     airFilter.connect(airGain);
@@ -1006,7 +1006,7 @@ window.alvesNitroAudio = (() => {
 
     const now = ctx.currentTime;
     const active = !!nextActive;
-    const volume = active ? (mode === 'power' ? 0.18 : mode === 'eco' ? 0.11 : 0.14) : 0.0001;
+    const volume = active ? (mode === 'power' ? 0.28 : mode === 'eco' ? 0.18 : 0.23) : 0.0001;
     const airFreq = mode === 'power' ? 1480 : mode === 'eco' ? 980 : 1220;
     const bodyFreq = mode === 'power' ? 310 : mode === 'eco' ? 210 : 260;
 
@@ -1032,15 +1032,15 @@ const vehHud = {
       nitro: 100,
       nitroActive: false,
       nitroMode: 'balanced',
-      tireTemp: 58,
-      tireGrip: 100,
+      tireTemp: 30,
+      tireGrip: 86,
       tireWear: 0,
       tireOrder: ['lf', 'rf', 'lr', 'rr'],
       tires: {
-        lf: { label: 'DE', temp: 58, grip: 100, wear: 0 },
-        rf: { label: 'DD', temp: 58, grip: 100, wear: 0 },
-        lr: { label: 'TE', temp: 58, grip: 100, wear: 0 },
-        rr: { label: 'TD', temp: 58, grip: 100, wear: 0 },
+        lf: { label: 'DE', temp: 30, grip: 86, wear: 0 },
+        rf: { label: 'DD', temp: 30, grip: 86, wear: 0 },
+        lr: { label: 'TE', temp: 30, grip: 86, wear: 0 },
+        rr: { label: 'TD', temp: 30, grip: 86, wear: 0 },
       },
       showSquareB: 0,
       show: false,
@@ -1111,15 +1111,17 @@ const vehHud = {
   },
   methods: {
     tireState(tire) {
-      const temp = Number(tire?.temp ?? 58);
+      const temp = Number(tire?.temp ?? 30);
       const wear = Number(tire?.wear ?? 0);
-      if (wear >= 72 || temp >= 132) return 'critical';
-      if (temp >= 114) return 'hot';
-      if (temp < 48) return 'cold';
-      return 'ideal';
+      if (wear >= 72 || temp >= 130) return 'critical';
+      if (temp >= 110) return 'overheated';
+      if (temp >= 95) return 'hot';
+      if (temp >= 70) return 'ideal';
+      if (temp >= 50) return 'warming';
+      return 'cold';
     },
     normalizeTire(key, tire) {
-      const current = this.tires[key] || { label: key.toUpperCase(), temp: 58, grip: 100, wear: 0 };
+      const current = this.tires[key] || { label: key.toUpperCase(), temp: 30, grip: 86, wear: 0 };
       return {
         label: tire?.label || current.label,
         temp: Math.max(0, Math.min(170, Math.round(tire?.temp ?? current.temp))),
@@ -1136,8 +1138,8 @@ const vehHud = {
       this.nitro = Math.max(0, Math.min(100, Math.round(data.nitro ?? this.nitro ?? 100)));
       this.nitroActive = data.nitroActive === 1 || data.nitroActive === true;
       this.nitroMode = data.nitroMode || this.nitroMode || 'balanced';
-      this.tireTemp = Math.max(0, Math.min(170, Math.round(data.tireTemp ?? this.tireTemp ?? 58)));
-      this.tireGrip = Math.max(0, Math.min(120, Math.round(data.tireGrip ?? this.tireGrip ?? 100)));
+      this.tireTemp = Math.max(0, Math.min(170, Math.round(data.tireTemp ?? this.tireTemp ?? 30)));
+      this.tireGrip = Math.max(0, Math.min(120, Math.round(data.tireGrip ?? this.tireGrip ?? 86)));
       this.tireWear = Math.max(0, Math.min(100, Math.round(data.tireWear ?? this.tireWear ?? 0)));
       if (data.tires) {
         this.tires = {

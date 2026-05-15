@@ -18,19 +18,19 @@ local nitroLastUsed = 0
 local nitroSoundId = nil
 local nitroMode = 'balanced'
 local nitroFlameEffects = {}
-local tireTemp = 58.0
+local tireTemp = 30.0
 local tireWear = 0.0
-local tireGrip = 1.0
+local tireGrip = 0.86
 local tireHandlingVehicle = 0
 local tireBaseHandling = nil
 local lastTireSpeedKmh = 0.0
 local tireKeys = { 'lf', 'rf', 'lr', 'rr' }
 local tireLabels = { lf = 'DE', rf = 'DD', lr = 'TE', rr = 'TD' }
 local tireTelemetry = {
-    lf = { label = 'DE', temp = 58.0, wear = 0.0, grip = 1.0 },
-    rf = { label = 'DD', temp = 58.0, wear = 0.0, grip = 1.0 },
-    lr = { label = 'TE', temp = 58.0, wear = 0.0, grip = 1.0 },
-    rr = { label = 'TD', temp = 58.0, wear = 0.0, grip = 1.0 },
+    lf = { label = 'DE', temp = 30.0, wear = 0.0, grip = 0.86 },
+    rf = { label = 'DD', temp = 30.0, wear = 0.0, grip = 0.86 },
+    lr = { label = 'TE', temp = 30.0, wear = 0.0, grip = 0.86 },
+    rr = { label = 'TD', temp = 30.0, wear = 0.0, grip = 0.86 },
 }
 
 local nitroConfig = {
@@ -850,11 +850,11 @@ local function resetTireHandling(vehicle)
     end
 
     if vehicle and vehicle ~= tireHandlingVehicle then
-        tireTemp = 58.0
+        tireTemp = 30.0
         tireWear = 0.0
-        tireGrip = 1.0
+        tireGrip = 0.86
         for _, key in ipairs(tireKeys) do
-            tireTelemetry[key] = { label = tireLabels[key], temp = 58.0, wear = 0.0, grip = 1.0 }
+            tireTelemetry[key] = { label = tireLabels[key], temp = 30.0, wear = 0.0, grip = 0.86 }
         end
     end
 
@@ -876,20 +876,22 @@ end
 
 local function getTireGripFactor(temp, wear)
     local tempFactor
-    if temp < 50.0 then
-        tempFactor = 0.94 + ((temp / 50.0) * 0.04) -- frio leve, sem punir demais
-    elseif temp <= 108.0 then
-        tempFactor = 1.02 -- janela verde ampla para corrida completa
-    elseif temp <= 128.0 then
-        tempFactor = 1.02 - (((temp - 108.0) / 20.0) * 0.08) -- amarelo: queda suave
-    elseif temp <= 145.0 then
-        tempFactor = 0.94 - (((temp - 128.0) / 17.0) * 0.12) -- vermelho só com abuso
+    if temp < 40.0 then
+        tempFactor = 0.72 + ((temp / 40.0) * 0.12) -- muito frio: pouco grip
+    elseif temp < 70.0 then
+        tempFactor = 0.84 + (((temp - 40.0) / 30.0) * 0.16) -- aquecendo
+    elseif temp <= 95.0 then
+        tempFactor = 1.04 -- sweet spot: 70°C ~ 95°C
+    elseif temp <= 110.0 then
+        tempFactor = 1.04 - (((temp - 95.0) / 15.0) * 0.08) -- quente: perda leve
+    elseif temp <= 130.0 then
+        tempFactor = 0.96 - (((temp - 110.0) / 20.0) * 0.18) -- superaquecido
     else
-        tempFactor = 0.82
+        tempFactor = 0.74 -- burnout extremo / crítico
     end
 
-    local wearFactor = 1.0 - math.min(0.12, (wear / 100.0) * 0.12)
-    return math.max(0.82, math.min(1.04, tempFactor * wearFactor))
+    local wearFactor = 1.0 - math.min(0.14, (wear / 100.0) * 0.14)
+    return math.max(0.68, math.min(1.04, tempFactor * wearFactor))
 end
 
 local function updateTireSystem(vehicle, delta)
@@ -922,52 +924,59 @@ local function updateTireSystem(vehicle, delta)
         local isRear = key == 'lr' or key == 'rr'
         local isOuter = (turningLeft and (key == 'rf' or key == 'rr')) or ((not turningLeft) and (key == 'lf' or key == 'lr'))
 
-        -- Temperatura-base de trabalho: só andar já aquece o pneu gradualmente.
-        -- Em reta rápida ele deve estabilizar no verde, não cair para ambiente.
-        local targetTemp = 38.0 + math.min(50.0, speed * 0.28)
-        local heatRate = 0.16
+        -- Temperatura-base de trabalho: parado/frio ~30°C, rodando normal busca 75~85°C.
+        local targetTemp = 30.0
+        if speed > 3.0 then
+            targetTemp = 34.0 + math.min(50.0, speed * 0.31)
+        end
+        local heatRate = 0.075
+        local directHeat = 0.0
 
         if speed > 45.0 and steering > 6.0 then
-            local cornerLoad = math.min(34.0, ((speed - 35.0) / 115.0) * (steering / 32.0) * 27.0)
-            if isFront then cornerLoad *= 1.18 end
-            if isOuter then cornerLoad *= 1.38 else cornerLoad *= 0.62 end
+            local cornerLoad = math.min(32.0, ((speed - 35.0) / 120.0) * (steering / 32.0) * 25.0)
+            if isFront then cornerLoad *= 1.16 end
+            if isOuter then cornerLoad *= 1.36 else cornerLoad *= 0.60 end
             targetTemp += cornerLoad
-            heatRate += 0.10
+            heatRate += 0.08
         end
 
-        if braking and speed > 35.0 then
-            local brakeLoad = math.min(24.0, 6.0 + (speed / 155.0) * 12.0 + math.min(6.0, decel / 85.0))
-            targetTemp += isFront and brakeLoad or (brakeLoad * 0.45)
-            heatRate += isFront and 0.12 or 0.05
+        if braking and speed > 30.0 then
+            local brakeLoad = math.min(28.0, 5.0 + (speed / 160.0) * 12.0 + math.min(10.0, decel / 70.0))
+            targetTemp += isFront and brakeLoad or (brakeLoad * 0.42)
+            directHeat += isFront and math.min(9.0, decel / 45.0) or math.min(3.5, decel / 120.0)
+            heatRate += isFront and 0.11 or 0.04
         end
 
         if handbrake and speed > 25.0 then
-            targetTemp += isRear and 32.0 or 9.0
-            heatRate += isRear and 0.22 or 0.06
+            targetTemp += isRear and 24.0 or 7.0
+            directHeat += isRear and 20.0 or 4.0
+            heatRate += isRear and 0.18 or 0.05
         end
 
         if burnout then
-            targetTemp += isRear and 55.0 or 16.0
-            heatRate += isRear and 0.35 or 0.10
+            -- Burnout não pode só estabilizar: ele injeta calor direto e sobe até faixa crítica.
+            targetTemp += isRear and 80.0 or 20.0
+            directHeat += isRear and 48.0 or 10.0
+            heatRate += isRear and 0.28 or 0.08
         end
 
         if airborne then
-            targetTemp = math.max(34.0, targetTemp - 30.0)
+            targetTemp = math.max(28.0, targetTemp - 30.0)
+            directHeat *= 0.20
             heatRate *= 0.35
         end
 
-        -- Esfria mais rápido só quando passou da janela verde; assim o pneu não gruda em 32°C rodando normal.
-        local coolRate = tire.temp > 112.0 and 0.24 or 0.10
+        local coolRate = tire.temp > 110.0 and 0.22 or 0.055
         local rate = targetTemp > tire.temp and heatRate or coolRate
-        tire.temp = tire.temp + ((targetTemp - tire.temp) * rate * delta)
-        tire.temp = math.max(32.0, math.min(150.0, tire.temp))
+        tire.temp = tire.temp + ((targetTemp - tire.temp) * rate * delta) + (directHeat * delta)
+        tire.temp = math.max(20.0, math.min(165.0, tire.temp))
 
         local wearGain = 0.0
-        if tire.temp > 122.0 then wearGain += (tire.temp - 122.0) * 0.010 end
+        if tire.temp > 110.0 then wearGain += (tire.temp - 110.0) * 0.008 end
         if speed > 85.0 and steering > 20.0 and isOuter then wearGain += 0.045 end
-        if braking and decel > 110.0 and isFront then wearGain += 0.035 end
-        if burnout and isRear then wearGain += 0.16 end
-        if handbrake and speed > 45.0 and isRear then wearGain += 0.055 end
+        if braking and decel > 110.0 and isFront then wearGain += 0.040 end
+        if burnout and isRear then wearGain += 0.32 end
+        if handbrake and speed > 45.0 and isRear then wearGain += 0.075 end
         tire.wear = math.max(0.0, math.min(100.0, tire.wear + (wearGain * delta)))
         tire.grip = getTireGripFactor(tire.temp, tire.wear)
 
