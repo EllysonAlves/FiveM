@@ -18,11 +18,19 @@ local nitroLastUsed = 0
 local nitroSoundId = nil
 local nitroMode = 'balanced'
 local nitroFlameEffects = {}
-local tireTemp = 45.0
+local tireTemp = 58.0
 local tireWear = 0.0
-local tireGrip = 0.82
+local tireGrip = 1.0
 local tireHandlingVehicle = 0
 local tireBaseHandling = nil
+local tireKeys = { 'lf', 'rf', 'lr', 'rr' }
+local tireLabels = { lf = 'DE', rf = 'DD', lr = 'TE', rr = 'TD' }
+local tireTelemetry = {
+    lf = { label = 'DE', temp = 58.0, wear = 0.0, grip = 1.0 },
+    rf = { label = 'DD', temp = 58.0, wear = 0.0, grip = 1.0 },
+    lr = { label = 'TE', temp = 58.0, wear = 0.0, grip = 1.0 },
+    rr = { label = 'TD', temp = 58.0, wear = 0.0, grip = 1.0 },
+}
 
 local nitroConfig = {
     rechargePerSecond = 10.0,
@@ -547,14 +555,13 @@ end
 
 local function playNitroSound(vehicle)
     if nitroSoundId then return end
-    nitroSoundId = GetSoundId()
-    PlaySoundFrontend(nitroSoundId, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', true)
+    nitroSoundId = true
+    SendNUIMessage({ action = 'alvesNitroSound', active = true, mode = nitroMode })
 end
 
 local function stopNitroSound()
     if not nitroSoundId then return end
-    StopSound(nitroSoundId)
-    ReleaseSoundId(nitroSoundId)
+    SendNUIMessage({ action = 'alvesNitroSound', active = false })
     nitroSoundId = nil
 end
 
@@ -594,6 +601,7 @@ lib.addKeybind({
             stopNitroFlames(cache.vehicle)
             startNitroFlames(cache.vehicle, nitroMode)
             Entity(cache.vehicle).state:set('nitroFlames', { active = true, mode = nitroMode }, true)
+            SendNUIMessage({ action = 'alvesNitroSound', active = true, mode = nitroMode })
         end
     end,
 })
@@ -786,7 +794,7 @@ local function updatePlayerHud(data)
     end
 end
 
-local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 
 local function updateVehicleHud(data)
     local shouldUpdate = false
@@ -815,6 +823,7 @@ local function updateVehicleHud(data)
             tireTemp = data[15],
             tireGrip = data[16],
             tireWear = data[17],
+            tires = data[18],
         })
     end
 end
@@ -840,9 +849,12 @@ local function resetTireHandling(vehicle)
     end
 
     if vehicle and vehicle ~= tireHandlingVehicle then
-        tireTemp = 45.0
+        tireTemp = 58.0
         tireWear = 0.0
-        tireGrip = 0.82
+        tireGrip = 1.0
+        for _, key in ipairs(tireKeys) do
+            tireTelemetry[key] = { label = tireLabels[key], temp = 58.0, wear = 0.0, grip = 1.0 }
+        end
     end
 
     tireHandlingVehicle = 0
@@ -863,18 +875,20 @@ end
 
 local function getTireGripFactor(temp, wear)
     local tempFactor
-    if temp < 55.0 then
-        tempFactor = 0.82 + ((temp / 55.0) * 0.13) -- frio: 0.82 → 0.95
-    elseif temp <= 95.0 then
-        tempFactor = 1.0 -- janela ideal
-    elseif temp <= 120.0 then
-        tempFactor = 1.0 - (((temp - 95.0) / 25.0) * 0.13) -- quente: até 0.87
+    if temp < 50.0 then
+        tempFactor = 0.94 + ((temp / 50.0) * 0.04) -- frio leve, sem punir demais
+    elseif temp <= 108.0 then
+        tempFactor = 1.02 -- janela verde ampla para corrida completa
+    elseif temp <= 128.0 then
+        tempFactor = 1.02 - (((temp - 108.0) / 20.0) * 0.08) -- amarelo: queda suave
+    elseif temp <= 145.0 then
+        tempFactor = 0.94 - (((temp - 128.0) / 17.0) * 0.12) -- vermelho só com abuso
     else
-        tempFactor = 0.84
+        tempFactor = 0.82
     end
 
-    local wearFactor = 1.0 - math.min(0.18, (wear / 100.0) * 0.18)
-    return math.max(0.72, math.min(1.04, tempFactor * wearFactor))
+    local wearFactor = 1.0 - math.min(0.12, (wear / 100.0) * 0.12)
+    return math.max(0.82, math.min(1.04, tempFactor * wearFactor))
 end
 
 local function updateTireSystem(vehicle, delta)
@@ -886,38 +900,66 @@ local function updateTireSystem(vehicle, delta)
     ensureTireHandlingBase(vehicle)
 
     local speed = GetEntitySpeed(vehicle) * 3.6
-    local steering = math.abs(GetVehicleSteeringAngle(vehicle) or 0.0)
+    local steerAngle = GetVehicleSteeringAngle(vehicle) or 0.0
+    local steering = math.abs(steerAngle)
     local handbrake = IsControlPressed(0, 76)
     local burnout = IsVehicleInBurnout(vehicle)
     local airborne = IsEntityInAir(vehicle)
+    local turningLeft = steerAngle > 0.0
 
-    local heatGain = 0.0
-    if speed > 18.0 then
-        heatGain += math.min(11.0, (speed / 120.0) * 2.2)
+    local tempSum = 0.0
+    local wearSum = 0.0
+    local gripSum = 0.0
+
+    for _, key in ipairs(tireKeys) do
+        local tire = tireTelemetry[key]
+        local isFront = key == 'lf' or key == 'rf'
+        local isRear = key == 'lr' or key == 'rr'
+        local isOuter = (turningLeft and (key == 'rf' or key == 'rr')) or ((not turningLeft) and (key == 'lf' or key == 'lr'))
+
+        local heatGain = 0.0
+        if speed > 25.0 then
+            heatGain += math.min(2.4, (speed / 180.0) * 1.8) -- rolagem normal: verde estável
+        end
+        if speed > 65.0 and steering > 10.0 then
+            local cornerHeat = math.min(10.5, ((speed - 55.0) / 120.0) * (steering / 35.0) * 8.0)
+            if isFront then cornerHeat *= 1.22 end
+            if isOuter then cornerHeat *= 1.32 else cornerHeat *= 0.72 end
+            heatGain += cornerHeat
+        end
+        if handbrake and speed > 35.0 then
+            heatGain += isRear and 12.0 or 4.0
+        end
+        if burnout then
+            heatGain += isRear and 34.0 or 10.0
+        end
+        if airborne then heatGain *= 0.12 end
+
+        local cooling = 5.6
+        if speed > 55.0 and steering < 8.0 and not handbrake and not burnout then cooling += 3.2 end
+        if speed < 12.0 and not burnout then cooling += 2.0 end
+        if tire.temp > 112.0 then cooling += 1.8 end -- ajuda a sair do amarelo/vermelho sem ficar preso
+
+        tire.temp = math.max(32.0, math.min(150.0, tire.temp + ((heatGain - cooling) * delta)))
+
+        local wearGain = 0.0
+        if tire.temp > 122.0 then wearGain += (tire.temp - 122.0) * 0.010 end
+        if speed > 85.0 and steering > 20.0 and isOuter then wearGain += 0.045 end
+        if burnout and isRear then wearGain += 0.16 end
+        if handbrake and speed > 45.0 and isRear then wearGain += 0.055 end
+        tire.wear = math.max(0.0, math.min(100.0, tire.wear + (wearGain * delta)))
+        tire.grip = getTireGripFactor(tire.temp, tire.wear)
+
+        tempSum += tire.temp
+        wearSum += tire.wear
+        gripSum += tire.grip
     end
-    if speed > 35.0 and steering > 12.0 then
-        heatGain += math.min(24.0, (steering / 35.0) * (speed / 80.0) * 9.0)
-    end
-    if handbrake and speed > 25.0 then heatGain += 16.0 end
-    if burnout then heatGain += 28.0 end
-    if airborne then heatGain *= 0.2 end
 
-    local cooling = 4.2
-    if speed > 70.0 and steering < 8.0 and not handbrake then cooling += 3.5 end
-    if speed < 10.0 then cooling += 2.0 end
+    tireTemp = tempSum / 4.0
+    tireWear = wearSum / 4.0
+    tireGrip = gripSum / 4.0
 
-    tireTemp = math.max(20.0, math.min(135.0, tireTemp + ((heatGain - cooling) * delta)))
-
-    local wearGain = 0.0
-    if tireTemp > 105.0 then wearGain += (tireTemp - 105.0) * 0.018 end
-    if speed > 45.0 and steering > 18.0 then wearGain += 0.11 end
-    if burnout then wearGain += 0.28 end
-    if handbrake and speed > 35.0 then wearGain += 0.10 end
-    tireWear = math.max(0.0, math.min(100.0, tireWear + (wearGain * delta)))
-
-    tireGrip = getTireGripFactor(tireTemp, tireWear)
-
-    local brakeFactor = math.max(0.72, tireGrip - math.min(0.12, tireWear / 850.0))
+    local brakeFactor = math.max(0.84, tireGrip - math.min(0.08, tireWear / 1200.0))
     SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMax', tireBaseHandling.tractionMax * tireGrip)
     SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMin', tireBaseHandling.tractionMin * tireGrip)
     SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fBrakeForce', tireBaseHandling.brakeForce * brakeFactor)
@@ -1060,6 +1102,12 @@ CreateThread(function()
                     math.floor(tireTemp + 0.5),
                     math.floor(tireGrip * 100 + 0.5),
                     math.floor(tireWear + 0.5),
+                    {
+                        lf = { label = tireTelemetry.lf.label, temp = math.floor(tireTelemetry.lf.temp + 0.5), grip = math.floor(tireTelemetry.lf.grip * 100 + 0.5), wear = math.floor(tireTelemetry.lf.wear + 0.5) },
+                        rf = { label = tireTelemetry.rf.label, temp = math.floor(tireTelemetry.rf.temp + 0.5), grip = math.floor(tireTelemetry.rf.grip * 100 + 0.5), wear = math.floor(tireTelemetry.rf.wear + 0.5) },
+                        lr = { label = tireTelemetry.lr.label, temp = math.floor(tireTelemetry.lr.temp + 0.5), grip = math.floor(tireTelemetry.lr.grip * 100 + 0.5), wear = math.floor(tireTelemetry.lr.wear + 0.5) },
+                        rr = { label = tireTelemetry.rr.label, temp = math.floor(tireTelemetry.rr.temp + 0.5), grip = math.floor(tireTelemetry.rr.grip * 100 + 0.5), wear = math.floor(tireTelemetry.rr.wear + 0.5) },
+                    },
                 })
                 showAltitude = false
                 showSeatbelt = true
@@ -1077,6 +1125,7 @@ CreateThread(function()
                         tireTemp = math.floor(tireTemp + 0.5),
                         tireGrip = math.floor(tireGrip * 100 + 0.5),
                         tireWear = math.floor(tireWear + 0.5),
+                        tires = tireTelemetry,
                     })
                     nitroKeyHeld = false
                     nitroActive = 0

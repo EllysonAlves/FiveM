@@ -328,10 +328,12 @@
                             <div class="ref-rpm-caption">RPM x1000</div>
                             <div class="ref-speed">{{ speed }}</div>
                             <div class="ref-unit">MPH</div>
-                            <div class="ref-tire" :class="tireState">
-                                <span>PNEU</span>
-                                <strong>{{ tireTemp }}°C</strong>
-                                <em>{{ tireGrip }}%</em>
+                            <div class="ref-tires">
+                                <div v-for="key in tireOrder" :key="key" class="ref-tire" :class="tireState(tires[key])">
+                                    <span>{{ tires[key].label }}</span>
+                                    <strong>{{ tires[key].temp }}°</strong>
+                                    <em>{{ tires[key].grip }}%</em>
+                                </div>
                             </div>
                         </div>
                     </div>

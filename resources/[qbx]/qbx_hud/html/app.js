@@ -943,6 +943,74 @@ app2.mount("#ui-container");
 
 // VEHICLE HUD
 
+window.alvesNitroAudio = (() => {
+  let ctx;
+  let master;
+  let rumble;
+  let whistle;
+  let noise;
+  let noiseSource;
+  let active = false;
+
+  function ensure() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain();
+    master.gain.value = 0;
+    master.connect(ctx.destination);
+
+    rumble = ctx.createOscillator();
+    rumble.type = 'sawtooth';
+    rumble.frequency.value = 72;
+    const rumbleGain = ctx.createGain();
+    rumbleGain.gain.value = 0.11;
+    rumble.connect(rumbleGain);
+    rumbleGain.connect(master);
+    rumble.start();
+
+    whistle = ctx.createOscillator();
+    whistle.type = 'triangle';
+    whistle.frequency.value = 920;
+    const whistleGain = ctx.createGain();
+    whistleGain.gain.value = 0.045;
+    whistle.connect(whistleGain);
+    whistleGain.connect(master);
+    whistle.start();
+
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.55;
+    noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = buffer;
+    noiseSource.loop = true;
+    noise = ctx.createBiquadFilter();
+    noise.type = 'bandpass';
+    noise.frequency.value = 1850;
+    noise.Q.value = 0.9;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.value = 0.18;
+    noiseSource.connect(noise);
+    noise.connect(noiseGain);
+    noiseGain.connect(master);
+    noiseSource.start();
+  }
+
+  function setActive(nextActive, mode = 'balanced') {
+    ensure();
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    active = !!nextActive;
+    const volume = active ? (mode === 'power' ? 0.34 : mode === 'eco' ? 0.24 : 0.29) : 0.0001;
+    rumble.frequency.setTargetAtTime(mode === 'power' ? 86 : 72, now, 0.04);
+    whistle.frequency.setTargetAtTime(mode === 'eco' ? 760 : mode === 'power' ? 1120 : 940, now, 0.05);
+    noise.frequency.setTargetAtTime(mode === 'power' ? 2250 : 1850, now, 0.06);
+    master.gain.cancelScheduledValues(now);
+    master.gain.setTargetAtTime(volume, now, active ? 0.035 : 0.12);
+  }
+
+  return { setActive };
+})();
+
 const vehHud = {
   data() {
     return {
@@ -956,9 +1024,16 @@ const vehHud = {
       nitro: 100,
       nitroActive: false,
       nitroMode: 'balanced',
-      tireTemp: 45,
-      tireGrip: 82,
+      tireTemp: 58,
+      tireGrip: 100,
       tireWear: 0,
+      tireOrder: ['lf', 'rf', 'lr', 'rr'],
+      tires: {
+        lf: { label: 'DE', temp: 58, grip: 100, wear: 0 },
+        rf: { label: 'DD', temp: 58, grip: 100, wear: 0 },
+        lr: { label: 'TE', temp: 58, grip: 100, wear: 0 },
+        rr: { label: 'TD', temp: 58, grip: 100, wear: 0 },
+      },
       showSquareB: 0,
       show: false,
       showAltitude: true,
@@ -976,6 +1051,8 @@ const vehHud = {
     this.listener = window.addEventListener("message", (event) => {
       if (event.data.action === "car") {
         this.vehicleHud(event.data);
+      } else if (event.data.action === "alvesNitroSound") {
+        window.alvesNitroAudio?.setActive(event.data.active, event.data.mode);
       }
     });
   },
@@ -1017,12 +1094,6 @@ const vehHud = {
     nitroModeLabel() {
       return this.nitroPalette.label;
     },
-    tireState() {
-      if (this.tireWear >= 70) return 'worn';
-      if (this.tireTemp < 55) return 'cold';
-      if (this.tireTemp > 105) return 'hot';
-      return 'ideal';
-    },
     beltText() {
       return this.seatbelt === 1 ? 'ON' : 'OFF';
     },
@@ -1031,6 +1102,23 @@ const vehHud = {
     },
   },
   methods: {
+    tireState(tire) {
+      const temp = Number(tire?.temp ?? 58);
+      const wear = Number(tire?.wear ?? 0);
+      if (wear >= 72 || temp >= 132) return 'critical';
+      if (temp >= 114) return 'hot';
+      if (temp < 48) return 'cold';
+      return 'ideal';
+    },
+    normalizeTire(key, tire) {
+      const current = this.tires[key] || { label: key.toUpperCase(), temp: 58, grip: 100, wear: 0 };
+      return {
+        label: tire?.label || current.label,
+        temp: Math.max(0, Math.min(170, Math.round(tire?.temp ?? current.temp))),
+        grip: Math.max(0, Math.min(120, Math.round(tire?.grip ?? current.grip))),
+        wear: Math.max(0, Math.min(100, Math.round(tire?.wear ?? current.wear))),
+      };
+    },
     vehicleHud(data) {
       this.show = data.show;
       this.speed = data.speed;
@@ -1040,9 +1128,17 @@ const vehHud = {
       this.nitro = Math.max(0, Math.min(100, Math.round(data.nitro ?? this.nitro ?? 100)));
       this.nitroActive = data.nitroActive === 1 || data.nitroActive === true;
       this.nitroMode = data.nitroMode || this.nitroMode || 'balanced';
-      this.tireTemp = Math.max(0, Math.min(160, Math.round(data.tireTemp ?? this.tireTemp ?? 45)));
-      this.tireGrip = Math.max(0, Math.min(120, Math.round(data.tireGrip ?? this.tireGrip ?? 82)));
+      this.tireTemp = Math.max(0, Math.min(170, Math.round(data.tireTemp ?? this.tireTemp ?? 58)));
+      this.tireGrip = Math.max(0, Math.min(120, Math.round(data.tireGrip ?? this.tireGrip ?? 100)));
       this.tireWear = Math.max(0, Math.min(100, Math.round(data.tireWear ?? this.tireWear ?? 0)));
+      if (data.tires) {
+        this.tires = {
+          lf: this.normalizeTire('lf', data.tires.lf),
+          rf: this.normalizeTire('rf', data.tires.rf),
+          lr: this.normalizeTire('lr', data.tires.lr),
+          rr: this.normalizeTire('rr', data.tires.rr),
+        };
+      }
       this.showSeatbelt = data.showSeatbelt;
       this.showAltitude = data.showAltitude;
       this.showSquareB = data.showSquareB;
