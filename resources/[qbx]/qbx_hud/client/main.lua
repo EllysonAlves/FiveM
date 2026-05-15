@@ -15,21 +15,39 @@ local nitroActive = 0
 local nitroLevel = 100
 local nitroKeyHeld = false
 local nitroLastUsed = 0
+local nitroMode = 'balanced'
 local nitroFlameEffects = {}
 
 local nitroConfig = {
-    drainPerSecond = 24.0,
     rechargePerSecond = 10.0,
     rechargeDelayMs = 1400,
     minToActivate = 6.0,
-    torqueMultiplier = 1.42,
-    powerMultiplier = 1.55,
+    modes = {
+        power = { label = 'AGRESSIVO', color = { r = 1.0, g = 0.05, b = 0.02 }, drainPerSecond = 34.0, torqueMultiplier = 1.58, powerMultiplier = 1.85 },
+        eco = { label = 'ECONÔMICO', color = { r = 0.05, g = 1.0, b = 0.20 }, drainPerSecond = 16.0, torqueMultiplier = 1.22, powerMultiplier = 1.28 },
+        balanced = { label = 'BALANCEADO', color = { r = 0.05, g = 0.45, b = 1.0 }, drainPerSecond = 24.0, torqueMultiplier = 1.42, powerMultiplier = 1.55 },
+    },
+    order = { 'power', 'eco', 'balanced' },
 }
 
 local nitroExhaustBones = {
     'exhaust', 'exhaust_2', 'exhaust_3', 'exhaust_4',
     'exhaust_5', 'exhaust_6', 'exhaust_7', 'exhaust_8',
 }
+
+local function getNitroModeConfig(mode)
+    return nitroConfig.modes[mode] or nitroConfig.modes.balanced
+end
+
+local function nextNitroMode(mode)
+    for index, modeName in ipairs(nitroConfig.order) do
+        if modeName == mode then
+            return nitroConfig.order[index + 1] or nitroConfig.order[1]
+        end
+    end
+
+    return 'balanced'
+end
 local hp = 100
 local armed = false
 local parachute = -1
@@ -486,10 +504,12 @@ local function stopAllNitroFlames()
     end
 end
 
-local function startNitroFlames(vehicle)
+local function startNitroFlames(vehicle, mode)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     if nitroFlameEffects[vehicle] then return end
 
+    local modeConfig = getNitroModeConfig(mode)
+    local flameColor = modeConfig.color
     local asset = 'veh_xs_vehicle_mods'
     local effectName = 'veh_nitrous'
     local effects = {}
@@ -507,7 +527,7 @@ local function startNitroFlames(vehicle)
             UseParticleFxAsset(asset)
             local effect = StartParticleFxLoopedOnEntityBone(effectName, vehicle, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, boneIndex, 1.25, false, false, false)
             if effect and effect ~= 0 then
-                SetParticleFxLoopedColour(effect, 0.05, 0.45, 1.0, false)
+                SetParticleFxLoopedColour(effect, flameColor.r, flameColor.g, flameColor.b, false)
                 SetParticleFxLoopedAlpha(effect, 0.95)
                 effects[#effects + 1] = effect
             end
@@ -519,17 +539,38 @@ local function startNitroFlames(vehicle)
     end
 end
 
-local function setNitroActive(vehicle, active)
+local function setNitroActive(vehicle, active, mode)
     nitroActive = active and 1 or 0
     if vehicle and vehicle ~= 0 and DoesEntityExist(vehicle) then
         SetVehicleBoostActive(vehicle, active)
         if active then
-            startNitroFlames(vehicle)
+            local activeMode = mode or nitroMode
+            Entity(vehicle).state:set('nitroFlames', { active = true, mode = activeMode }, true)
+            startNitroFlames(vehicle, activeMode)
         else
+            Entity(vehicle).state:set('nitroFlames', false, true)
             stopNitroFlames(vehicle)
         end
     end
 end
+
+lib.addKeybind({
+    name = 'alves_nitro_mode',
+    description = 'Alternar tipo de nitro',
+    defaultKey = 'N',
+    defaultMapper = 'keyboard',
+    onPressed = function()
+        nitroMode = nextNitroMode(nitroMode)
+        local modeConfig = getNitroModeConfig(nitroMode)
+        exports.qbx_core:Notify(('Nitro: %s'):format(modeConfig.label), 'inform')
+
+        if nitroActive == 1 and cache.vehicle then
+            stopNitroFlames(cache.vehicle)
+            startNitroFlames(cache.vehicle, nitroMode)
+            Entity(cache.vehicle).state:set('nitroFlames', { active = true, mode = nitroMode }, true)
+        end
+    end,
+})
 
 lib.addKeybind({
     name = 'alves_nitro',
@@ -570,11 +611,12 @@ CreateThread(function()
         local usingNitro = canBoost and nitroKeyHeld and nitroLevel > nitroConfig.minToActivate
 
         if usingNitro then
-            nitroLevel = math.max(0.0, nitroLevel - (nitroConfig.drainPerSecond * delta))
+            local modeConfig = getNitroModeConfig(nitroMode)
+            nitroLevel = math.max(0.0, nitroLevel - (modeConfig.drainPerSecond * delta))
             nitroLastUsed = now
-            setNitroActive(vehicle, true)
-            SetVehicleCheatPowerIncrease(vehicle, nitroConfig.powerMultiplier)
-            SetVehicleEngineTorqueMultiplier(vehicle, nitroConfig.torqueMultiplier)
+            setNitroActive(vehicle, true, nitroMode)
+            SetVehicleCheatPowerIncrease(vehicle, modeConfig.powerMultiplier)
+            SetVehicleEngineTorqueMultiplier(vehicle, modeConfig.torqueMultiplier)
         else
             if nitroActive == 1 then
                 setNitroActive(vehicle, false)
@@ -627,9 +669,14 @@ RegisterNetEvent('hud:client:UpdateNitrous', function(_, nitroLevel, bool)
 end)
 
 qbx.entityStateHandler('nitroFlames', function(veh, netId, value)
-    -- Legacy compatibility: never start visual flame from statebag here, otherwise
-    -- delayed replicated values can leave a static flame after nitro is released.
-    if not value then stopNitroFlames(veh) end
+    if value and type(value) == 'table' and value.active then
+        if veh ~= cache.vehicle then
+            stopNitroFlames(veh)
+            startNitroFlames(veh, value.mode)
+        end
+    else
+        stopNitroFlames(veh)
+    end
 end)
 
 qbx.entityStateHandler('nitro', function(veh, netId, value)
@@ -707,7 +754,7 @@ local function updatePlayerHud(data)
     end
 end
 
-local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 
 local function updateVehicleHud(data)
     local shouldUpdate = false
@@ -732,6 +779,7 @@ local function updateVehicleHud(data)
             rpm = data[11],
             nitro = data[12],
             nitroActive = data[13],
+            nitroMode = data[14],
         })
     end
 end
@@ -880,6 +928,7 @@ CreateThread(function()
                     GetVehicleCurrentRpm(cache.vehicle),
                     math.floor(nitroLevel + 0.5),
                     nitroActive,
+                    nitroMode,
                 })
                 showAltitude = false
                 showSeatbelt = true
@@ -893,6 +942,7 @@ CreateThread(function()
                         cruise = false,
                         nitro = math.floor(nitroLevel + 0.5),
                         nitroActive = 0,
+                        nitroMode = nitroMode,
                     })
                     nitroKeyHeld = false
                     nitroActive = 0

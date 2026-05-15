@@ -955,6 +955,7 @@ const vehHud = {
       rpm: 0,
       nitro: 100,
       nitroActive: false,
+      nitroMode: 'balanced',
       showSquareB: 0,
       show: false,
       showAltitude: true,
@@ -996,6 +997,23 @@ const vehHud = {
     nitroDeg() {
       return Math.max(0, Math.min(84, (Number(this.nitro || 0) / 100) * 84)).toFixed(1) + 'deg';
     },
+    nitroPalette() {
+      const colors = {
+        power: { solid: '#ef4444', soft: 'rgba(239,68,68,.20)', label: 'PWR' },
+        eco: { solid: '#22c55e', soft: 'rgba(34,197,94,.20)', label: 'ECO' },
+        balanced: { solid: '#38bdf8', soft: 'rgba(56,189,248,.20)', label: 'BAL' },
+      };
+      return colors[this.nitroMode] || colors.balanced;
+    },
+    nitroColor() {
+      return this.nitroPalette.solid;
+    },
+    nitroSoftColor() {
+      return this.nitroPalette.soft;
+    },
+    nitroModeLabel() {
+      return this.nitroPalette.label;
+    },
     beltText() {
       return this.seatbelt === 1 ? 'ON' : 'OFF';
     },
@@ -1012,6 +1030,7 @@ const vehHud = {
       this.rpm = Math.max(0, Math.min(100, Math.round((data.rpm || 0) * 100)));
       this.nitro = Math.max(0, Math.min(100, Math.round(data.nitro ?? this.nitro ?? 100)));
       this.nitroActive = data.nitroActive === 1 || data.nitroActive === true;
+      this.nitroMode = data.nitroMode || this.nitroMode || 'balanced';
       this.showSeatbelt = data.showSeatbelt;
       this.showAltitude = data.showAltitude;
       this.showSquareB = data.showSquareB;
