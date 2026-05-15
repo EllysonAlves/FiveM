@@ -167,7 +167,7 @@ lib.addCommand('car', {
         DeleteVehicle(currentVehicle)
     end
 
-    local _, vehicle = qbx.spawnVehicle({
+    local netId, vehicle = qbx.spawnVehicle({
         model = args[locale('command.car.params.model.name')],
         spawnSource = ped,
         warp = true,
@@ -176,6 +176,7 @@ lib.addCommand('car', {
 
     local plate = qbx.getVehiclePlate(vehicle)
     config.giveVehicleKeys(source, plate, vehicle)
+    TriggerClientEvent('qbx_core:client:prepareAdminSpawnedVehicle', source, netId)
 end)
 
 lib.addCommand('dv', {

@@ -15,6 +15,7 @@ local nitroActive = 0
 local nitroLevel = 100
 local nitroKeyHeld = false
 local nitroLastUsed = 0
+local nitroFlameEffects = {}
 
 local nitroConfig = {
     drainPerSecond = 24.0,
@@ -23,6 +24,11 @@ local nitroConfig = {
     minToActivate = 6.0,
     torqueMultiplier = 1.42,
     powerMultiplier = 1.55,
+}
+
+local nitroExhaustBones = {
+    'exhaust', 'exhaust_2', 'exhaust_3', 'exhaust_4',
+    'exhaust_5', 'exhaust_6', 'exhaust_7', 'exhaust_8',
 }
 local hp = 100
 local armed = false
@@ -463,11 +469,60 @@ local function canUseNitro(vehicle)
         and GetIsVehicleEngineRunning(vehicle)
 end
 
+local function stopNitroFlames(vehicle)
+    local effects = nitroFlameEffects[vehicle]
+    if not effects then return end
+
+    for _, effect in ipairs(effects) do
+        StopParticleFxLooped(effect, false)
+    end
+
+    nitroFlameEffects[vehicle] = nil
+end
+
+local function startNitroFlames(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    if nitroFlameEffects[vehicle] then return end
+
+    local asset = 'veh_xs_vehicle_mods'
+    local effectName = 'veh_nitrous'
+    local effects = {}
+
+    RequestNamedPtfxAsset(asset)
+    local deadline = GetGameTimer() + 1000
+    while not HasNamedPtfxAssetLoaded(asset) and GetGameTimer() < deadline do
+        Wait(0)
+    end
+    if not HasNamedPtfxAssetLoaded(asset) then return end
+
+    for _, boneName in ipairs(nitroExhaustBones) do
+        local boneIndex = GetEntityBoneIndexByName(vehicle, boneName)
+        if boneIndex ~= -1 then
+            UseParticleFxAsset(asset)
+            local effect = StartParticleFxLoopedOnEntityBone(effectName, vehicle, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, boneIndex, 1.25, false, false, false)
+            if effect and effect ~= 0 then
+                SetParticleFxLoopedColour(effect, 0.05, 0.45, 1.0, false)
+                SetParticleFxLoopedAlpha(effect, 0.95)
+                effects[#effects + 1] = effect
+            end
+        end
+    end
+
+    if #effects > 0 then
+        nitroFlameEffects[vehicle] = effects
+    end
+end
+
 local function setNitroActive(vehicle, active)
     nitroActive = active and 1 or 0
     if vehicle and vehicle ~= 0 and DoesEntityExist(vehicle) then
         SetVehicleBoostActive(vehicle, active)
         Entity(vehicle).state:set('nitroFlames', active, true)
+        if active then
+            startNitroFlames(vehicle)
+        else
+            stopNitroFlames(vehicle)
+        end
     end
 end
 
@@ -564,6 +619,13 @@ RegisterNetEvent('hud:client:UpdateNitrous', function(_, nitroLevel, bool)
 end)
 
 qbx.entityStateHandler('nitroFlames', function(veh, netId, value)
+    if value then
+        startNitroFlames(veh)
+    else
+        stopNitroFlames(veh)
+    end
+
+    if not cache.vehicle or cache.vehicle == 0 then return end
     local plate = qbx.string.trim(GetVehicleNumberPlateText(veh))
     local cachePlate = qbx.string.trim(GetVehicleNumberPlateText(cache.vehicle))
     if plate ~= cachePlate then return end
@@ -571,6 +633,7 @@ qbx.entityStateHandler('nitroFlames', function(veh, netId, value)
 end)
 
 qbx.entityStateHandler('nitro', function(veh, netId, value)
+    if not cache.vehicle or cache.vehicle == 0 then return end
     local plate = qbx.string.trim(GetVehicleNumberPlateText(veh))
     local cachePlate = qbx.string.trim(GetVehicleNumberPlateText(cache.vehicle))
     if plate ~= cachePlate then return end

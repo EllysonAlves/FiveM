@@ -145,6 +145,25 @@ end)
 
 -- Vehicle Commands
 
+RegisterNetEvent('qbx_core:client:prepareAdminSpawnedVehicle', function(netId)
+    if not netId or not NetworkDoesEntityExistWithNetworkId(netId) then return end
+
+    local vehicle = NetToVeh(netId)
+    if vehicle == 0 or not DoesEntityExist(vehicle) then return end
+
+    SetVehicleFixed(vehicle)
+    SetVehicleDeformationFixed(vehicle)
+    SetVehicleDirtLevel(vehicle, 0.0)
+    SetVehicleEngineHealth(vehicle, 1000.0)
+    SetVehicleBodyHealth(vehicle, 1000.0)
+    SetVehiclePetrolTankHealth(vehicle, 1000.0)
+    SetVehicleFuelLevel(vehicle, 100.0)
+    Entity(vehicle).state:set('fuel', 100.0, true)
+    SetVehicleUndriveable(vehicle, false)
+    SetVehicleEngineOn(vehicle, true, true, true)
+    SetVehicleOnGroundProperly(vehicle)
+end)
+
 lib.callback.register('qbx_core:client:getVehiclesInRadius', function(radius)
     local vehicles = lib.getNearbyVehicles(GetEntityCoords(cache.ped), radius or 5, true)
 

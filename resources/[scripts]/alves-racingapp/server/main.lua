@@ -841,12 +841,17 @@ lib.callback.register('alves-racingapp:server:spawnGarageVehicle', function(src,
     if not ped or ped == 0 then return nil end
 
     local bucket = GetPlayerRoutingBucket(src)
-    local netId, vehicle = qbx.spawnVehicle({
+    local ok, netId, vehicle = pcall(qbx.spawnVehicle, {
         model = modelName,
         spawnSource = ped,
         warp = true,
         bucket = bucket
     })
+
+    if not ok then
+        print(('[Alves Racing] Falha ao spawnar veículo da garagem "%s": %s'):format(modelName, tostring(netId)))
+        return nil
+    end
 
     if not vehicle or vehicle == 0 then return nil end
 

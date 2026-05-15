@@ -533,6 +533,15 @@ local function prepareGarageVehicle(vehicle)
     SetEntityAsMissionEntity(vehicle, true, false)
     SetVehicleIsStolen(vehicle, false)
     SetVehicleIsWanted(vehicle, false)
+    SetVehicleFixed(vehicle)
+    SetVehicleDeformationFixed(vehicle)
+    SetVehicleDirtLevel(vehicle, 0.0)
+    SetVehicleEngineHealth(vehicle, 1000.0)
+    SetVehicleBodyHealth(vehicle, 1000.0)
+    SetVehiclePetrolTankHealth(vehicle, 1000.0)
+    SetVehicleFuelLevel(vehicle, 100.0)
+    Entity(vehicle).state:set('fuel', 100.0, true)
+    SetVehicleUndriveable(vehicle, false)
     SetVehicleEngineOn(vehicle, true, true, true)
     SetPedIntoVehicle(PlayerPedId(), vehicle, -1)
     SetVehicleOnGroundProperly(vehicle)
@@ -905,14 +914,16 @@ RegisterNUICallback('spawnGarageVehicle', function(data, cb)
             return
         end
 
-        local veh, attempts = nil, 0
+        local veh, attempts = 0, 0
         repeat
-            veh = NetToVeh(netId)
+            if NetworkDoesEntityExistWithNetworkId(netId) then
+                veh = NetToVeh(netId)
+            end
             Wait(100)
             attempts = attempts + 1
-        until DoesEntityExist(veh) or attempts > 50
+        until (veh ~= 0 and DoesEntityExist(veh)) or attempts > 50
 
-        if not DoesEntityExist(veh) then
+        if veh == 0 or not DoesEntityExist(veh) then
             SendNUIMessage({ action = 'garageSpawnFail', data = { name = modelName, message = 'Veículo spawnou, mas não sincronizou no client.' } })
             return
         end
