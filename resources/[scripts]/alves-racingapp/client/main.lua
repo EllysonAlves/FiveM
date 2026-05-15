@@ -525,8 +525,6 @@ local function applySavedVisualPreset(vehicle, modelName)
 end
 
 function disableRaceVehiclePhase()
-    if not Config.RaceVehiclePhase then return end
-
     local vehicle = phasedVehicle
     if (not vehicle or vehicle == 0 or not DoesEntityExist(vehicle)) and CurrentRaceData.Vehicle then
         vehicle = CurrentRaceData.Vehicle
@@ -536,8 +534,16 @@ function disableRaceVehiclePhase()
     end
 
     if DoesEntityExist(vehicle) then
-        SetNetworkVehicleAsGhost(vehicle, false)
-        ResetEntityAlpha(vehicle)
+        if Config.RaceVehiclePhase then
+            SetNetworkVehicleAsGhost(vehicle, false)
+            ResetEntityAlpha(vehicle)
+        end
+
+        -- O alves-racingapp só protege o veículo durante a corrida.
+        -- Ao sair/finalizar, devolve o comportamento normal para o servidor.
+        SetEntityInvincible(vehicle, false)
+        SetVehicleCanBeVisiblyDamaged(vehicle, true)
+        SetVehicleEngineCanDegrade(vehicle, true)
     end
 
     phasedVehicle = 0
@@ -556,6 +562,8 @@ function applyRaceVehicleRules(vehicle)
 
     SetEntityInvincible(vehicle, true)
     SetVehicleCanBeVisiblyDamaged(vehicle, false)
+    SetVehicleEngineCanDegrade(vehicle, false)
+    SetVehicleFuelLevel(vehicle, 100.0)
     SetVehicleFixed(vehicle)
     SetVehicleDirtLevel(vehicle, 0.0)
     SetVehicleBodyHealth(vehicle, 1000.0)

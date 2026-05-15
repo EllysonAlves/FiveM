@@ -20,6 +20,9 @@ resources/[alves]/alves-racingapp
 - Histórico/scoreboard de corridas.
 - Preset visual por jogador/veículo.
 - Phase/ghost durante corrida para evitar colisão entre competidores.
+- Veículo da corrida protegido, com combustível em 100 e sem degradação **somente enquanto a corrida está ativa**.
+
+O `alves-racingapp` é independente: fora da corrida ele não altera ped, mapa, NPCs, HUD global, `/car`, vehiclekeys, combustível global ou configuração do servidor.
 
 ## O que NÃO vai no pacote
 
@@ -133,4 +136,5 @@ Se um modelo não existir/carregar, o client usa fallback `sultanrs` e mostra er
 - O banco precisa ter pelo menos uma pista. O `INSTALL.sql` já cria uma pista demo.
 - Para produção, substitua a pista demo pelas pistas reais do servidor.
 - O pacote não mexe em `/car` ou spawn normal do servidor. Se carro fora da corrida nascer quebrado, a origem deve ser outro resource do servidor.
-- Dentro da corrida, o veículo spawnado pelo lobby é corrigido com `SetVehicleFixed`, vida cheia e sujeira zerada antes da largada.
+- Dentro da corrida, o veículo spawnado pelo lobby é corrigido/protegido, mantém combustível cheio e usa phase/ghost quando configurado.
+- Ao sair/finalizar a corrida, o app remove ghost/invencibilidade e devolve o veículo ao comportamento normal do servidor.
