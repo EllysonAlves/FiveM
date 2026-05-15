@@ -13,7 +13,6 @@ ui_page 'ui/index.html'
 
 shared_scripts {
     '@ox_lib/init.lua',
-    '@qbx_core/modules/playerdata.lua',
     'config.lua'
 }
 

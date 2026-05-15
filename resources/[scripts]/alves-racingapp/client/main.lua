@@ -85,9 +85,25 @@ RegisterCommand('sair', function()
 end, false)
 
 -- ==================== FUNÇÕES AUXILIARES ====================
+local function awaitServerCallback(name, ...)
+    local ok, result = pcall(lib.callback.await, name, false, ...)
+    if ok then return result end
+
+    print(('[Alves Racing] Callback indisponível: %s | %s'):format(name, tostring(result)))
+    return nil
+end
+
 function openTablet()
-    local playerInfo = lib.callback.await('alves-racingapp:getPlayerInfo', false)
-    local onlineCount = lib.callback.await('alves-racingapp:getOnlineCount', false)
+    local playerInfo = awaitServerCallback('alves-racingapp:getPlayerInfo')
+    if not playerInfo then
+        lib.notify({
+            type = 'error',
+            description = 'Servidor do Alves Racing ainda não está pronto. Reinicie/ensure o alves-racingapp no servidor.'
+        })
+        return
+    end
+
+    local onlineCount = awaitServerCallback('alves-racingapp:getOnlineCount') or 0
     
     SetNuiFocus(true, true)
     SendNUIMessage({
