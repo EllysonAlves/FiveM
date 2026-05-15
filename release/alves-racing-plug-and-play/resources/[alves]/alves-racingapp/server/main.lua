@@ -4,20 +4,14 @@
 print('^2[Alves Racing]^0 Server iniciado!')
 
 -- ==================== CONFIGURAÇÃO ====================
--- Apenas veículos Classe S (Super Cars)
-local QuickRaceVehicles = {
-    -- JFx Super Cars
-    'arbitergtc', 'arbitergtn', 'carrion', 'carrionmech', 'cazador', 'cazadortcr',
-    'clubr', 'clubrhyc', 'elegyrh8c', 'elegyxa19', 'elegyxa19ven', 'flashgrs',
-    'growlerc', 'gstasp3', 'gstbanac1', 'gstbanac1b', 'gstbanac1c',
-    'gstbisc1', 'gstbisc1b', 'gstbisc1c', 'gstcdy2', 'gstcdy2b', 'gstcdy2c', 'gstcdy2d',
-    'gstcs24', 'gstevmr1', 'gstingnt1', 'gstingnt1b', 'gstpaladingt', 'gstpenf1',
-    'gstpmp7s1', 'gstpmp7s1b', 'gstpmp7s1c', 'gstpmp7s1d', 'gstraid3', 'gstrh5s2',
-    'gstsadlt5', 'gstsettimo1', 'gstslt1', 'gstsrs1', 'gsttorle1', 'gstturo1',
-    'gstvanguard1b', 'gstxsajest3reptile', 'gstyc1', 'hellfirec', 'nwjester',
-    's790', 'schlag', 'shenron', 'shinobid', 'sr8', 'str', 'strcoupe',
-    'taurion', 'trager', 'tragmech', 'vulture',
-}
+local function getRaceVehicles()
+    if Config.RaceVehicles and #Config.RaceVehicles > 0 then
+        return Config.RaceVehicles
+    end
+
+    -- Fallback seguro caso alguém apague a lista do config.lua.
+    return { 'sultanrs' }
+end
 
 -- Sistema de Tiers ELO
 local ELO_TIERS = {
@@ -313,7 +307,7 @@ end
 
 local function getRandomVehicleOptions(amount)
     local pool = {}
-    for _, vehicle in ipairs(QuickRaceVehicles) do
+    for _, vehicle in ipairs(getRaceVehicles()) do
         pool[#pool + 1] = vehicle
     end
 
@@ -826,7 +820,7 @@ lib.callback.register('alves-racingapp:getTracks', function(src)
 end)
 
 lib.callback.register('alves-racingapp:getQuickRaceVehicles', function(src)
-    return QuickRaceVehicles
+    return getRaceVehicles()
 end)
 
 lib.callback.register('alves-racingapp:getMyProfile', function(src)
@@ -1190,7 +1184,7 @@ RegisterCommand('racestats', function(source, args, rawCommand)
         print('========== ALVES RACING STATS ==========')
         print(('Pistas carregadas: %d'):format(#Tracks))
         print(('Corridas ativas: %d'):format(#activeRaces))
-        print(('Veículos disponíveis: %d'):format(#QuickRaceVehicles))
+        print(('Veículos disponíveis: %d'):format(#getRaceVehicles()))
         print('========================================')
     end
 end, true)

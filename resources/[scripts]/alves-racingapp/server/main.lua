@@ -4,6 +4,7 @@
 print('^2[Alves Racing]^0 Server iniciado!')
 
 -- ==================== CONFIGURAÇÃO ====================
+<<<<<<< HEAD
 -- Apenas veículos Classe S (Super Cars)
 local QuickRaceVehicles = {
     -- JFx Super Cars
@@ -16,6 +17,16 @@ local QuickRaceVehicles = {
     's790', 'schlag',  'sr8', 'str', 'strcoupe',
      'vulture',
 }
+=======
+local function getRaceVehicles()
+    if Config.RaceVehicles and #Config.RaceVehicles > 0 then
+        return Config.RaceVehicles
+    end
+
+    -- Fallback seguro caso alguém apague a lista do config.lua.
+    return { 'sultanrs' }
+end
+>>>>>>> 3a1ac187576520f3e2ddd17a2d54ef782625e31f
 
 -- Sistema de Tiers ELO
 local ELO_TIERS = {
@@ -311,7 +322,7 @@ end
 
 local function getRandomVehicleOptions(amount)
     local pool = {}
-    for _, vehicle in ipairs(QuickRaceVehicles) do
+    for _, vehicle in ipairs(getRaceVehicles()) do
         pool[#pool + 1] = vehicle
     end
 
@@ -824,7 +835,7 @@ lib.callback.register('alves-racingapp:getTracks', function(src)
 end)
 
 lib.callback.register('alves-racingapp:getQuickRaceVehicles', function(src)
-    return QuickRaceVehicles
+    return getRaceVehicles()
 end)
 
 lib.callback.register('alves-racingapp:getMyProfile', function(src)
@@ -1188,7 +1199,7 @@ RegisterCommand('racestats', function(source, args, rawCommand)
         print('========== ALVES RACING STATS ==========')
         print(('Pistas carregadas: %d'):format(#Tracks))
         print(('Corridas ativas: %d'):format(#activeRaces))
-        print(('Veículos disponíveis: %d'):format(#QuickRaceVehicles))
+        print(('Veículos disponíveis: %d'):format(#getRaceVehicles()))
         print('========================================')
     end
 end, true)

@@ -4,16 +4,14 @@ ensure oxmysql
 ensure ox_lib
 ensure qbx_core
 
-# Veículos custom usados pelo Alves Racing
-ensure [JFx]
+# Se usar veículos addon/custom, inicie o resource/pasta deles antes do alves-racingapp.
+# Exemplo:
+# ensure [carros]
+# ensure vipcars
 
-# Opcional: necessario apenas para /tuning, /bennys, /custom e /customizar
-# ensure qbx_customs
-
-# Tema da UI
+# Tema da UI/tablet
 setr alves:themePrimary "#8b5cf6"
 setr alves:themeBackground "#080712"
 
-# Resources do pacote
-ensure alves-racing-core
+# Script de corridas
 ensure alves-racingapp

@@ -30,6 +30,24 @@ Config.LobbyCountdownSeconds = 60
 Config.LobbyMapOptions = 3
 Config.LobbyVehicleOptions = 3
 
+-- Veículos disponíveis no lobby de corrida.
+-- Use o spawn name do veículo. Pode ser vanilla ou addon; o único requisito é
+-- o modelo estar carregável no servidor do jogador antes da corrida iniciar.
+-- Ex.: se o servidor tem carros em [vipcars], basta garantir `ensure [vipcars]`
+-- antes do `ensure alves-racingapp` e colocar os spawn names aqui.
+Config.RaceVehicles = {
+    'sultanrs',
+    'elegy',
+    'jester3',
+    'comet5',
+    'banshee2',
+    'ninef',
+    'massacro',
+    'feltzer2',
+    'coquette',
+    'kuruma',
+}
+
 -- Voltas automáticas por distância da pista no banco.
 -- Regra do Alves Racing:
 -- - pistas curtas viram circuito com mais voltas;

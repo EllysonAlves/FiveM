@@ -540,6 +540,8 @@ function applyRaceVehicleRules(vehicle)
 
     SetEntityInvincible(vehicle, true)
     SetVehicleCanBeVisiblyDamaged(vehicle, false)
+    SetVehicleFixed(vehicle)
+    SetVehicleDirtLevel(vehicle, 0.0)
     SetVehicleBodyHealth(vehicle, 1000.0)
     SetVehicleEngineHealth(vehicle, 1000.0)
     SetVehiclePetrolTankHealth(vehicle, 1000.0)
