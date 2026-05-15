@@ -23,6 +23,7 @@ local tireWear = 0.0
 local tireGrip = 1.0
 local tireHandlingVehicle = 0
 local tireBaseHandling = nil
+local lastTireSpeedKmh = 0.0
 local tireKeys = { 'lf', 'rf', 'lr', 'rr' }
 local tireLabels = { lf = 'DE', rf = 'DD', lr = 'TE', rr = 'TD' }
 local tireTelemetry = {
@@ -894,6 +895,7 @@ end
 local function updateTireSystem(vehicle, delta)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) or GetPedInVehicleSeat(vehicle, -1) ~= cache.ped then
         resetTireHandling(vehicle)
+        lastTireSpeedKmh = 0.0
         return
     end
 
@@ -906,6 +908,9 @@ local function updateTireSystem(vehicle, delta)
     local burnout = IsVehicleInBurnout(vehicle)
     local airborne = IsEntityInAir(vehicle)
     local turningLeft = steerAngle > 0.0
+    local decel = math.max(0.0, (lastTireSpeedKmh - speed) / math.max(delta, 0.001))
+    local braking = IsControlPressed(0, 72) or decel > 80.0
+    lastTireSpeedKmh = speed
 
     local tempSum = 0.0
     local wearSum = 0.0
@@ -917,34 +922,50 @@ local function updateTireSystem(vehicle, delta)
         local isRear = key == 'lr' or key == 'rr'
         local isOuter = (turningLeft and (key == 'rf' or key == 'rr')) or ((not turningLeft) and (key == 'lf' or key == 'lr'))
 
-        local heatGain = 0.0
-        if speed > 25.0 then
-            heatGain += math.min(2.4, (speed / 180.0) * 1.8) -- rolagem normal: verde estável
+        -- Temperatura-base de trabalho: só andar já aquece o pneu gradualmente.
+        -- Em reta rápida ele deve estabilizar no verde, não cair para ambiente.
+        local targetTemp = 38.0 + math.min(50.0, speed * 0.28)
+        local heatRate = 0.16
+
+        if speed > 45.0 and steering > 6.0 then
+            local cornerLoad = math.min(34.0, ((speed - 35.0) / 115.0) * (steering / 32.0) * 27.0)
+            if isFront then cornerLoad *= 1.18 end
+            if isOuter then cornerLoad *= 1.38 else cornerLoad *= 0.62 end
+            targetTemp += cornerLoad
+            heatRate += 0.10
         end
-        if speed > 65.0 and steering > 10.0 then
-            local cornerHeat = math.min(10.5, ((speed - 55.0) / 120.0) * (steering / 35.0) * 8.0)
-            if isFront then cornerHeat *= 1.22 end
-            if isOuter then cornerHeat *= 1.32 else cornerHeat *= 0.72 end
-            heatGain += cornerHeat
+
+        if braking and speed > 35.0 then
+            local brakeLoad = math.min(24.0, 6.0 + (speed / 155.0) * 12.0 + math.min(6.0, decel / 85.0))
+            targetTemp += isFront and brakeLoad or (brakeLoad * 0.45)
+            heatRate += isFront and 0.12 or 0.05
         end
-        if handbrake and speed > 35.0 then
-            heatGain += isRear and 12.0 or 4.0
+
+        if handbrake and speed > 25.0 then
+            targetTemp += isRear and 32.0 or 9.0
+            heatRate += isRear and 0.22 or 0.06
         end
+
         if burnout then
-            heatGain += isRear and 34.0 or 10.0
+            targetTemp += isRear and 55.0 or 16.0
+            heatRate += isRear and 0.35 or 0.10
         end
-        if airborne then heatGain *= 0.12 end
 
-        local cooling = 5.6
-        if speed > 55.0 and steering < 8.0 and not handbrake and not burnout then cooling += 3.2 end
-        if speed < 12.0 and not burnout then cooling += 2.0 end
-        if tire.temp > 112.0 then cooling += 1.8 end -- ajuda a sair do amarelo/vermelho sem ficar preso
+        if airborne then
+            targetTemp = math.max(34.0, targetTemp - 30.0)
+            heatRate *= 0.35
+        end
 
-        tire.temp = math.max(32.0, math.min(150.0, tire.temp + ((heatGain - cooling) * delta)))
+        -- Esfria mais rápido só quando passou da janela verde; assim o pneu não gruda em 32°C rodando normal.
+        local coolRate = tire.temp > 112.0 and 0.24 or 0.10
+        local rate = targetTemp > tire.temp and heatRate or coolRate
+        tire.temp = tire.temp + ((targetTemp - tire.temp) * rate * delta)
+        tire.temp = math.max(32.0, math.min(150.0, tire.temp))
 
         local wearGain = 0.0
         if tire.temp > 122.0 then wearGain += (tire.temp - 122.0) * 0.010 end
         if speed > 85.0 and steering > 20.0 and isOuter then wearGain += 0.045 end
+        if braking and decel > 110.0 and isFront then wearGain += 0.035 end
         if burnout and isRear then wearGain += 0.16 end
         if handbrake and speed > 45.0 and isRear then wearGain += 0.055 end
         tire.wear = math.max(0.0, math.min(100.0, tire.wear + (wearGain * delta)))
