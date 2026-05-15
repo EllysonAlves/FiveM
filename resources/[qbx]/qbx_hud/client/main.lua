@@ -542,7 +542,10 @@ end
 local function setNitroActive(vehicle, active, mode)
     nitroActive = active and 1 or 0
     if vehicle and vehicle ~= 0 and DoesEntityExist(vehicle) then
-        SetVehicleBoostActive(vehicle, active)
+        -- O boost nativo desenha uma chama própria que fica avermelhada e não
+        -- respeita a cor do setup. Mantemos o ganho real via torque/power e
+        -- usamos nosso PTFX colorido para indicar o modo do nitro.
+        SetVehicleBoostActive(vehicle, false)
         if active then
             local activeMode = mode or nitroMode
             Entity(vehicle).state:set('nitroFlames', { active = true, mode = activeMode }, true)
