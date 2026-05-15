@@ -23,9 +23,9 @@ local nitroConfig = {
     rechargeDelayMs = 1400,
     minToActivate = 6.0,
     modes = {
-        power = { label = 'AGRESSIVO', color = { r = 1.0, g = 0.05, b = 0.02 }, drainPerSecond = 34.0, torqueMultiplier = 1.58, powerMultiplier = 1.85 },
-        eco = { label = 'ECONÔMICO', color = { r = 0.05, g = 1.0, b = 0.20 }, drainPerSecond = 16.0, torqueMultiplier = 1.22, powerMultiplier = 1.28 },
-        balanced = { label = 'BALANCEADO', color = { r = 0.05, g = 0.45, b = 1.0 }, drainPerSecond = 24.0, torqueMultiplier = 1.42, powerMultiplier = 1.55 },
+        power = { label = 'AGRESSIVO', color = { r = 1.0, g = 0.05, b = 0.02 }, drainPerSecond = 38.0, torqueMultiplier = 2.35, powerMultiplier = 2.65, speedBoostPerSecond = 9.5, maxSpeed = 112.0 },
+        eco = { label = 'ECONÔMICO', color = { r = 0.05, g = 1.0, b = 0.20 }, drainPerSecond = 16.0, torqueMultiplier = 1.55, powerMultiplier = 1.75, speedBoostPerSecond = 4.2, maxSpeed = 92.0 },
+        balanced = { label = 'BALANCEADO', color = { r = 0.05, g = 0.45, b = 1.0 }, drainPerSecond = 25.0, torqueMultiplier = 1.92, powerMultiplier = 2.15, speedBoostPerSecond = 6.4, maxSpeed = 102.0 },
     },
     order = { 'power', 'eco', 'balanced' },
 }
@@ -620,6 +620,12 @@ CreateThread(function()
             setNitroActive(vehicle, true, nitroMode)
             SetVehicleCheatPowerIncrease(vehicle, modeConfig.powerMultiplier)
             SetVehicleEngineTorqueMultiplier(vehicle, modeConfig.torqueMultiplier)
+
+            local currentSpeed = GetEntitySpeed(vehicle)
+            local maxSpeed = modeConfig.maxSpeed or 100.0
+            if currentSpeed > 2.0 and currentSpeed < maxSpeed then
+                SetVehicleForwardSpeed(vehicle, math.min(currentSpeed + ((modeConfig.speedBoostPerSecond or 0.0) * delta), maxSpeed))
+            end
         else
             if nitroActive == 1 then
                 setNitroActive(vehicle, false)
