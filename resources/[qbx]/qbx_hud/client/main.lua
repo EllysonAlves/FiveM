@@ -12,6 +12,18 @@ local thirst = playerState.thirst or 100
 local cashAmount = 0
 local bankAmount = 0
 local nitroActive = 0
+local nitroLevel = 100
+local nitroKeyHeld = false
+local nitroLastUsed = 0
+
+local nitroConfig = {
+    drainPerSecond = 24.0,
+    rechargePerSecond = 10.0,
+    rechargeDelayMs = 1400,
+    minToActivate = 6.0,
+    torqueMultiplier = 1.42,
+    powerMultiplier = 1.55,
+}
 local hp = 100
 local armed = false
 local parachute = -1
@@ -442,6 +454,78 @@ RegisterNetEvent('hud:client:ToggleAirHud', function()
     showAltitude = not showAltitude
 end)
 
+local function canUseNitro(vehicle)
+    return vehicle
+        and vehicle ~= 0
+        and DoesEntityExist(vehicle)
+        and GetPedInVehicleSeat(vehicle, -1) == cache.ped
+        and not IsThisModelABicycle(GetEntityModel(vehicle))
+        and GetIsVehicleEngineRunning(vehicle)
+end
+
+local function setNitroActive(vehicle, active)
+    nitroActive = active and 1 or 0
+    if vehicle and vehicle ~= 0 and DoesEntityExist(vehicle) then
+        SetVehicleBoostActive(vehicle, active)
+        Entity(vehicle).state:set('nitroFlames', active, true)
+    end
+end
+
+lib.addKeybind({
+    name = 'alves_nitro',
+    description = 'Usar nitro',
+    defaultKey = 'LSHIFT',
+    defaultMapper = 'keyboard',
+    onPressed = function()
+        nitroKeyHeld = true
+    end,
+    onReleased = function()
+        nitroKeyHeld = false
+        nitroLastUsed = GetGameTimer()
+        if cache.vehicle then
+            setNitroActive(cache.vehicle, false)
+        else
+            nitroActive = 0
+        end
+    end,
+})
+
+RegisterCommand('nitrocheio', function()
+    nitroLevel = 100
+    exports.qbx_core:Notify('Nitro recarregado.', 'success')
+end, false)
+
+CreateThread(function()
+    local lastTick = GetGameTimer()
+
+    while true do
+        Wait(50)
+        local now = GetGameTimer()
+        local delta = (now - lastTick) / 1000.0
+        lastTick = now
+
+        local vehicle = cache.vehicle
+        local canBoost = canUseNitro(vehicle)
+        local usingNitro = canBoost and nitroKeyHeld and nitroLevel > nitroConfig.minToActivate
+
+        if usingNitro then
+            nitroLevel = math.max(0.0, nitroLevel - (nitroConfig.drainPerSecond * delta))
+            nitroLastUsed = now
+            setNitroActive(vehicle, true)
+            SetVehicleCheatPowerIncrease(vehicle, nitroConfig.powerMultiplier)
+            SetVehicleEngineTorqueMultiplier(vehicle, nitroConfig.torqueMultiplier)
+        else
+            if nitroActive == 1 then
+                setNitroActive(vehicle, false)
+            end
+
+            if not nitroKeyHeld and (now - nitroLastUsed) >= nitroConfig.rechargeDelayMs then
+                nitroLevel = math.min(100.0, nitroLevel + (nitroConfig.rechargePerSecond * delta))
+            end
+        end
+    end
+end)
+
 ---@deprecated Use statebags instead
 RegisterNetEvent('hud:client:UpdateNeeds', function(newHunger, newThirst) -- Triggered in qb-core
     hunger = newHunger
@@ -560,7 +644,7 @@ local function updatePlayerHud(data)
     end
 end
 
-local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 
 local function updateVehicleHud(data)
     local shouldUpdate = false
@@ -583,6 +667,8 @@ local function updateVehicleHud(data)
             showSquareB = data[9],
             showCircleB = data[10],
             rpm = data[11],
+            nitro = data[12],
+            nitroActive = data[13],
         })
     end
 end
@@ -729,6 +815,8 @@ CreateThread(function()
                     showSquareB,
                     showCircleB,
                     GetVehicleCurrentRpm(cache.vehicle),
+                    math.floor(nitroLevel + 0.5),
+                    nitroActive,
                 })
                 showAltitude = false
                 showSeatbelt = true
@@ -740,7 +828,11 @@ CreateThread(function()
                         show = false,
                         seatbelt = false,
                         cruise = false,
+                        nitro = math.floor(nitroLevel + 0.5),
+                        nitroActive = 0,
                     })
+                    nitroKeyHeld = false
+                    nitroActive = 0
                     cruiseOn = false
                 end
                 DisplayRadar(sharedConfig.menu.isOutMapChecked)

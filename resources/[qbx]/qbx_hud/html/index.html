@@ -308,8 +308,9 @@
             </div>
             <div id="veh-container">
                 <div v-show="show" class="alves-vehicle-hud alves-ref-speedometer">
-                    <div class="ref-gauge" :class="rpmLevel" :style="{ '--speed': speedPercent + '%', '--rpm-deg': rpmDeg, '--fuel': fuelPercent + '%' }">
+                    <div class="ref-gauge" :class="rpmLevel" :style="{ '--speed': speedPercent + '%', '--rpm-deg': rpmDeg, '--fuel': fuelPercent + '%', '--nitro-deg': nitroDeg }">
                         <div class="ref-ring"></div>
+                        <div class="ref-nitro-ring" :class="{ active: nitroActive }"></div>
                         <div class="ref-ticks"></div>
                         <div class="ref-scale">
                             <span class="n n0">0</span>

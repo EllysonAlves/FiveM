@@ -1439,3 +1439,44 @@ speed:after{
 .ref-scale .n160{
   color:rgba(255,220,220,.94) !important;
 }
+
+/* ==================== ALVES RACING NITRO HUD ==================== */
+.ref-nitro-ring{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  z-index:3;
+  background:
+    conic-gradient(from 138deg,
+      #38bdf8 0 var(--nitro-deg, 0deg),
+      rgba(56,189,248,.18) var(--nitro-deg, 0deg) 84deg,
+      transparent 84deg 360deg);
+  -webkit-mask:radial-gradient(circle, transparent 0 58%, #000 59% 70%, transparent 71%);
+  mask:radial-gradient(circle, transparent 0 58%, #000 59% 70%, transparent 71%);
+  filter:drop-shadow(0 0 10px rgba(56,189,248,.48));
+  opacity:.92;
+  pointer-events:none;
+}
+
+.ref-nitro-ring::after{
+  content:"NITRO";
+  position:absolute;
+  left:50%;
+  bottom:22px;
+  transform:translateX(-50%);
+  color:#7dd3fc;
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:2px;
+  text-shadow:0 0 10px rgba(56,189,248,.85), 0 2px 6px rgba(0,0,0,.85);
+}
+
+.ref-nitro-ring.active{
+  filter:drop-shadow(0 0 18px rgba(56,189,248,.95));
+  animation:nitroPulse .18s infinite alternate ease-in-out;
+}
+
+@keyframes nitroPulse{
+  from{ opacity:.84; }
+  to{ opacity:1; }
+}

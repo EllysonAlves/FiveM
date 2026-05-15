@@ -953,6 +953,8 @@ const vehHud = {
       speed: 0,
       seatbelt: 0,
       rpm: 0,
+      nitro: 100,
+      nitroActive: false,
       showSquareB: 0,
       show: false,
       showAltitude: true,
@@ -991,6 +993,9 @@ const vehHud = {
     fuelPercent() {
       return Math.max(0, Math.min(100, Number(this.fuel || 0)));
     },
+    nitroDeg() {
+      return Math.max(0, Math.min(84, (Number(this.nitro || 0) / 100) * 84)).toFixed(1) + 'deg';
+    },
     beltText() {
       return this.seatbelt === 1 ? 'ON' : 'OFF';
     },
@@ -1005,6 +1010,8 @@ const vehHud = {
       this.altitude = data.altitude;
       this.fuel = data.fuel;
       this.rpm = Math.max(0, Math.min(100, Math.round((data.rpm || 0) * 100)));
+      this.nitro = Math.max(0, Math.min(100, Math.round(data.nitro ?? this.nitro ?? 100)));
+      this.nitroActive = data.nitroActive === 1 || data.nitroActive === true;
       this.showSeatbelt = data.showSeatbelt;
       this.showAltitude = data.showAltitude;
       this.showSquareB = data.showSquareB;
