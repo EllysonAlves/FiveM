@@ -15,6 +15,7 @@ local nitroActive = 0
 local nitroLevel = 100
 local nitroKeyHeld = false
 local nitroLastUsed = 0
+local nitroSoundId = nil
 local nitroMode = 'balanced'
 local nitroFlameEffects = {}
 
@@ -23,9 +24,9 @@ local nitroConfig = {
     rechargeDelayMs = 1400,
     minToActivate = 6.0,
     modes = {
-        power = { label = 'AGRESSIVO', color = { r = 1.0, g = 0.05, b = 0.02 }, drainPerSecond = 38.0, torqueMultiplier = 2.15, powerMultiplier = 2.55, speedBoostPerSecond = 6.0, maxSpeed = 95.0 },
-        eco = { label = 'ECONÔMICO', color = { r = 0.05, g = 1.0, b = 0.20 }, drainPerSecond = 16.0, torqueMultiplier = 1.35, powerMultiplier = 1.55, speedBoostPerSecond = 2.2, maxSpeed = 78.0 },
-        balanced = { label = 'BALANCEADO', color = { r = 0.05, g = 0.45, b = 1.0 }, drainPerSecond = 25.0, torqueMultiplier = 1.7, powerMultiplier = 2.0, speedBoostPerSecond = 3.8, maxSpeed = 86.0 },
+        power = { label = 'AGRESSIVO', color = { r = 1.0, g = 0.05, b = 0.02 }, drainPerSecond = 38.0, torqueMultiplier = 1.75, powerMultiplier = 2.05 },
+        eco = { label = 'ECONÔMICO', color = { r = 0.05, g = 1.0, b = 0.20 }, drainPerSecond = 16.0, torqueMultiplier = 1.22, powerMultiplier = 1.35 },
+        balanced = { label = 'BALANCEADO', color = { r = 0.05, g = 0.45, b = 1.0 }, drainPerSecond = 25.0, torqueMultiplier = 1.45, powerMultiplier = 1.65 },
     },
     order = { 'power', 'eco', 'balanced' },
 }
@@ -539,6 +540,19 @@ local function startNitroFlames(vehicle, mode)
     end
 end
 
+local function playNitroSound(vehicle)
+    if nitroSoundId then return end
+    nitroSoundId = GetSoundId()
+    PlaySoundFromEntity(nitroSoundId, 'Flare', vehicle, 'DLC_HEISTS_BIOLAB_FINALE_SOUNDS', false, 0)
+end
+
+local function stopNitroSound()
+    if not nitroSoundId then return end
+    StopSound(nitroSoundId)
+    ReleaseSoundId(nitroSoundId)
+    nitroSoundId = nil
+end
+
 local function setNitroActive(vehicle, active, mode)
     local wasActive = nitroActive == 1
     nitroActive = active and 1 or 0
@@ -552,9 +566,11 @@ local function setNitroActive(vehicle, active, mode)
                 Entity(vehicle).state:set('nitroFlames', { active = true, mode = activeMode }, true)
             end
             startNitroFlames(vehicle, activeMode)
+            playNitroSound(vehicle)
         else
             Entity(vehicle).state:set('nitroFlames', false, true)
             stopNitroFlames(vehicle)
+            stopNitroSound()
         end
     end
 end
@@ -594,6 +610,7 @@ lib.addKeybind({
             nitroActive = 0
         end
         stopAllNitroFlames()
+        stopNitroSound()
     end,
 })
 
@@ -623,16 +640,15 @@ CreateThread(function()
             SetVehicleCheatPowerIncrease(vehicle, modeConfig.powerMultiplier)
             SetVehicleEngineTorqueMultiplier(vehicle, modeConfig.torqueMultiplier)
 
-            local currentSpeed = GetEntitySpeed(vehicle)
-            local maxSpeed = modeConfig.maxSpeed or 90.0
-            if currentSpeed > 2.0 and currentSpeed < maxSpeed then
-                SetVehicleForwardSpeed(vehicle, math.min(currentSpeed + ((modeConfig.speedBoostPerSecond or 0.0) * delta), maxSpeed))
-            end
+            -- Não usar SetVehicleForwardSpeed/ApplyForce: esses natives alteram a física
+            -- do carro e deixam direção/air control com sensação de hack.
+            -- O nitro fica restrito a motor/torque para afetar aceleração sem quebrar dirigibilidade.
         else
             if nitroActive == 1 then
                 setNitroActive(vehicle, false)
             else
                 stopAllNitroFlames()
+                stopNitroSound()
             end
 
             if not nitroKeyHeld and (now - nitroLastUsed) >= nitroConfig.rechargeDelayMs then
@@ -958,6 +974,7 @@ CreateThread(function()
                     nitroKeyHeld = false
                     nitroActive = 0
                     stopAllNitroFlames()
+                    stopNitroSound()
                     cruiseOn = false
                 end
                 DisplayRadar(sharedConfig.menu.isOutMapChecked)
