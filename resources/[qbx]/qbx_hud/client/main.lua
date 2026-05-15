@@ -17,16 +17,15 @@ local nitroKeyHeld = false
 local nitroLastUsed = 0
 local nitroMode = 'balanced'
 local nitroFlameEffects = {}
-local nitroNeonStates = {}
 
 local nitroConfig = {
     rechargePerSecond = 10.0,
     rechargeDelayMs = 1400,
     minToActivate = 6.0,
     modes = {
-        power = { label = 'AGRESSIVO', color = { r = 1.0, g = 0.05, b = 0.02 }, drainPerSecond = 42.0, torqueMultiplier = 4.2, powerMultiplier = 70.0, speedBoostPerSecond = 28.0, force = 72.0, maxSpeed = 150.0 },
-        eco = { label = 'ECONÔMICO', color = { r = 0.05, g = 1.0, b = 0.20 }, drainPerSecond = 16.0, torqueMultiplier = 2.25, powerMultiplier = 34.0, speedBoostPerSecond = 12.0, force = 32.0, maxSpeed = 120.0 },
-        balanced = { label = 'BALANCEADO', color = { r = 0.05, g = 0.45, b = 1.0 }, drainPerSecond = 26.0, torqueMultiplier = 3.2, powerMultiplier = 52.0, speedBoostPerSecond = 19.0, force = 50.0, maxSpeed = 135.0 },
+        power = { label = 'AGRESSIVO', color = { r = 1.0, g = 0.05, b = 0.02 }, drainPerSecond = 38.0, torqueMultiplier = 2.15, powerMultiplier = 2.55, speedBoostPerSecond = 6.0, maxSpeed = 95.0 },
+        eco = { label = 'ECONÔMICO', color = { r = 0.05, g = 1.0, b = 0.20 }, drainPerSecond = 16.0, torqueMultiplier = 1.35, powerMultiplier = 1.55, speedBoostPerSecond = 2.2, maxSpeed = 78.0 },
+        balanced = { label = 'BALANCEADO', color = { r = 0.05, g = 0.45, b = 1.0 }, drainPerSecond = 25.0, torqueMultiplier = 1.7, powerMultiplier = 2.0, speedBoostPerSecond = 3.8, maxSpeed = 86.0 },
     },
     order = { 'power', 'eco', 'balanced' },
 }
@@ -488,26 +487,15 @@ local function canUseNitro(vehicle)
         and GetIsVehicleEngineRunning(vehicle)
 end
 
-local function getNitroRgb(mode)
-    local color = getNitroModeConfig(mode).color
-    return math.floor((color.r or 0.0) * 255), math.floor((color.g or 0.0) * 255), math.floor((color.b or 0.0) * 255)
-end
-
 local function stopNitroFlames(vehicle)
-    local visual = nitroFlameEffects[vehicle]
-    if visual then
-        visual.active = false
-        nitroFlameEffects[vehicle] = nil
+    local effects = nitroFlameEffects[vehicle]
+    if not effects then return end
+
+    for _, effect in ipairs(effects) do
+        StopParticleFxLooped(effect, false)
     end
 
-    local neon = nitroNeonStates[vehicle]
-    if neon and DoesEntityExist(vehicle) then
-        for index = 0, 3 do
-            SetVehicleNeonLightEnabled(vehicle, index, neon.enabled[index] == true)
-        end
-        SetVehicleNeonLightsColour(vehicle, neon.r or 255, neon.g or 255, neon.b or 255)
-    end
-    nitroNeonStates[vehicle] = nil
+    nitroFlameEffects[vehicle] = nil
 end
 
 local function stopAllNitroFlames()
@@ -518,57 +506,44 @@ end
 
 local function startNitroFlames(vehicle, mode)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    if nitroFlameEffects[vehicle] then return end
 
-    local current = nitroFlameEffects[vehicle]
-    if current and current.mode == mode then return end
-    if current then stopNitroFlames(vehicle) end
+    -- O asset nativo de nitro praticamente ignora tint em alguns clientes.
+    -- Mantemos fogo simples no escapamento, sem neon/luz extra.
+    local asset = 'veh_xs_vehicle_mods'
+    local effectName = 'veh_nitrous'
+    local effects = {}
+    effects.mode = mode
 
-    local r, g, b = getNitroRgb(mode)
-
-    if not nitroNeonStates[vehicle] then
-        local oldR, oldG, oldB = GetVehicleNeonLightsColour(vehicle)
-        nitroNeonStates[vehicle] = {
-            r = oldR,
-            g = oldG,
-            b = oldB,
-            enabled = {
-                [0] = IsVehicleNeonLightEnabled(vehicle, 0),
-                [1] = IsVehicleNeonLightEnabled(vehicle, 1),
-                [2] = IsVehicleNeonLightEnabled(vehicle, 2),
-                [3] = IsVehicleNeonLightEnabled(vehicle, 3),
-            }
-        }
+    RequestNamedPtfxAsset(asset)
+    local deadline = GetGameTimer() + 1000
+    while not HasNamedPtfxAssetLoaded(asset) and GetGameTimer() < deadline do
+        Wait(0)
     end
+    if not HasNamedPtfxAssetLoaded(asset) then return end
 
-    for index = 0, 3 do
-        SetVehicleNeonLightEnabled(vehicle, index, true)
-    end
-    SetVehicleNeonLightsColour(vehicle, r, g, b)
-
-    local visual = { active = true, mode = mode, r = r, g = g, b = b }
-    nitroFlameEffects[vehicle] = visual
-
-    CreateThread(function()
-        while visual.active and nitroFlameEffects[vehicle] == visual and DoesEntityExist(vehicle) do
-            for _, boneName in ipairs(nitroExhaustBones) do
-                local boneIndex = GetEntityBoneIndexByName(vehicle, boneName)
-                if boneIndex ~= -1 then
-                    local coords = GetWorldPositionOfEntityBone(vehicle, boneIndex)
-                    DrawLightWithRange(coords.x, coords.y, coords.z, r, g, b, 4.8, 8.0)
-                end
+    for _, boneName in ipairs(nitroExhaustBones) do
+        local boneIndex = GetEntityBoneIndexByName(vehicle, boneName)
+        if boneIndex ~= -1 then
+            UseParticleFxAsset(asset)
+            local effect = StartParticleFxLoopedOnEntityBone(effectName, vehicle, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, boneIndex, 1.15, false, false, false)
+            if effect and effect ~= 0 then
+                SetParticleFxLoopedAlpha(effect, 0.95)
+                effects[#effects + 1] = effect
             end
-            Wait(0)
         end
-    end)
+    end
+
+    if #effects > 0 then
+        nitroFlameEffects[vehicle] = effects
+    end
 end
 
 local function setNitroActive(vehicle, active, mode)
     local wasActive = nitroActive == 1
     nitroActive = active and 1 or 0
     if vehicle and vehicle ~= 0 and DoesEntityExist(vehicle) then
-        -- O boost nativo desenha uma chama própria avermelhada e não respeita
-        -- cor. Mantemos o ganho real via torque/power/força e usamos luz/neon
-        -- colorido para indicar o setup do nitro.
+        -- Evita a chama nativa extra ficar presa; o visual é controlado pelo PTFX abaixo.
         SetVehicleBoostActive(vehicle, false)
         if active then
             local activeMode = mode or nitroMode
@@ -649,10 +624,8 @@ CreateThread(function()
             SetVehicleEngineTorqueMultiplier(vehicle, modeConfig.torqueMultiplier)
 
             local currentSpeed = GetEntitySpeed(vehicle)
-            local maxSpeed = modeConfig.maxSpeed or 100.0
-            if currentSpeed > 1.0 and currentSpeed < maxSpeed then
-                local forward = GetEntityForwardVector(vehicle)
-                ApplyForceToEntity(vehicle, 1, forward.x * (modeConfig.force or 0.0), forward.y * (modeConfig.force or 0.0), 0.18, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
+            local maxSpeed = modeConfig.maxSpeed or 90.0
+            if currentSpeed > 2.0 and currentSpeed < maxSpeed then
                 SetVehicleForwardSpeed(vehicle, math.min(currentSpeed + ((modeConfig.speedBoostPerSecond or 0.0) * delta), maxSpeed))
             end
         else
