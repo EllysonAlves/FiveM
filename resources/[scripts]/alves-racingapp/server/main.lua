@@ -862,6 +862,20 @@ lib.callback.register('alves-racingapp:server:spawnGarageVehicle', function(src,
     return netId
 end)
 
+
+lib.callback.register('alves-racingapp:server:giveGarageVehicleKeys', function(src, netId)
+    if not netId then return false end
+
+    local vehicle = NetworkGetEntityFromNetworkId(netId)
+    if not vehicle or vehicle == 0 then return false end
+
+    if GetResourceState('qbx_vehiclekeys') == 'started' then
+        exports.qbx_vehiclekeys:GiveKeys(src, vehicle, true)
+    end
+
+    return true
+end)
+
 lib.callback.register('alves-racingapp:getMyProfile', function(src)
     print(string.format('[Alves Racing] getMyProfile chamado por source %d', src))
     

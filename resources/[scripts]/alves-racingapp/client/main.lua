@@ -525,6 +525,50 @@ local function applySavedVisualPreset(vehicle, modelName)
 end
 
 
+
+local function loadGarageModel(modelName)
+    local model = joaat(modelName)
+    if not IsModelInCdimage(model) or not IsModelAVehicle(model) then return nil end
+
+    RequestModel(model)
+    local deadline = GetGameTimer() + 5000
+    while not HasModelLoaded(model) and GetGameTimer() < deadline do
+        Wait(50)
+    end
+
+    if not HasModelLoaded(model) then return nil end
+    return model
+end
+
+local function spawnLocalGarageVehicle(modelName)
+    local model = loadGarageModel(modelName)
+    if not model then return nil, 'Modelo indisponível ou não carregado no client.' end
+
+    local ped = PlayerPedId()
+    local currentVehicle = GetVehiclePedIsIn(ped, false)
+    if DoesEntityExist(currentVehicle) then
+        SetEntityAsMissionEntity(currentVehicle, true, true)
+        DeleteVehicle(currentVehicle)
+    end
+
+    local coords = GetOffsetFromEntityInWorldCoords(ped, 0.0, 4.0, 0.0)
+    local heading = GetEntityHeading(ped)
+    RequestCollisionAtCoord(coords.x, coords.y, coords.z)
+
+    local veh = CreateVehicle(model, coords.x, coords.y, coords.z + 0.35, heading, true, false)
+    SetModelAsNoLongerNeeded(model)
+
+    if not DoesEntityExist(veh) then return nil, 'Falha ao criar veículo no client.' end
+
+    local netId = VehToNet(veh)
+    SetNetworkIdExistsOnAllMachines(netId, true)
+    SetNetworkIdCanMigrate(netId, true)
+
+    SetEntityAsMissionEntity(veh, true, true)
+    SetVehicleOnGroundProperly(veh)
+    return veh, nil
+end
+
 local function prepareGarageVehicle(vehicle)
     if not DoesEntityExist(vehicle) then return end
 
@@ -908,28 +952,18 @@ RegisterNUICallback('spawnGarageVehicle', function(data, cb)
             return
         end
 
-        local netId = lib.callback.await('alves-racingapp:server:spawnGarageVehicle', false, modelName)
-        if not netId then
-            SendNUIMessage({ action = 'garageSpawnFail', data = { name = modelName, message = 'Modelo indisponível ou não carregado no servidor.' } })
-            return
-        end
-
-        local veh, attempts = 0, 0
-        repeat
-            if NetworkDoesEntityExistWithNetworkId(netId) then
-                veh = NetToVeh(netId)
-            end
-            Wait(100)
-            attempts = attempts + 1
-        until (veh ~= 0 and DoesEntityExist(veh)) or attempts > 50
-
-        if veh == 0 or not DoesEntityExist(veh) then
-            SendNUIMessage({ action = 'garageSpawnFail', data = { name = modelName, message = 'Veículo spawnou, mas não sincronizou no client.' } })
+        local veh, errorMessage = spawnLocalGarageVehicle(modelName)
+        if not veh then
+            SendNUIMessage({ action = 'garageSpawnFail', data = { name = modelName, message = errorMessage or 'Falha ao spawnar veículo.' } })
             return
         end
 
         applySavedVisualPreset(veh, modelName)
         prepareGarageVehicle(veh)
+
+        local netId = VehToNet(veh)
+        lib.callback.await('alves-racingapp:server:giveGarageVehicleKeys', false, netId)
+
         SendNUIMessage({ action = 'garageSpawnOk', data = { name = modelName } })
     end)
 end)

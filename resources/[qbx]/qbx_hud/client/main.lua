@@ -480,6 +480,12 @@ local function stopNitroFlames(vehicle)
     nitroFlameEffects[vehicle] = nil
 end
 
+local function stopAllNitroFlames()
+    for vehicle in pairs(nitroFlameEffects) do
+        stopNitroFlames(vehicle)
+    end
+end
+
 local function startNitroFlames(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     if nitroFlameEffects[vehicle] then return end
@@ -517,7 +523,6 @@ local function setNitroActive(vehicle, active)
     nitroActive = active and 1 or 0
     if vehicle and vehicle ~= 0 and DoesEntityExist(vehicle) then
         SetVehicleBoostActive(vehicle, active)
-        Entity(vehicle).state:set('nitroFlames', active, true)
         if active then
             startNitroFlames(vehicle)
         else
@@ -542,6 +547,7 @@ lib.addKeybind({
         else
             nitroActive = 0
         end
+        stopAllNitroFlames()
     end,
 })
 
@@ -572,6 +578,8 @@ CreateThread(function()
         else
             if nitroActive == 1 then
                 setNitroActive(vehicle, false)
+            else
+                stopAllNitroFlames()
             end
 
             if not nitroKeyHeld and (now - nitroLastUsed) >= nitroConfig.rechargeDelayMs then
@@ -619,17 +627,9 @@ RegisterNetEvent('hud:client:UpdateNitrous', function(_, nitroLevel, bool)
 end)
 
 qbx.entityStateHandler('nitroFlames', function(veh, netId, value)
-    if value then
-        startNitroFlames(veh)
-    else
-        stopNitroFlames(veh)
-    end
-
-    if not cache.vehicle or cache.vehicle == 0 then return end
-    local plate = qbx.string.trim(GetVehicleNumberPlateText(veh))
-    local cachePlate = qbx.string.trim(GetVehicleNumberPlateText(cache.vehicle))
-    if plate ~= cachePlate then return end
-    nitroActive = value
+    -- Legacy compatibility: never start visual flame from statebag here, otherwise
+    -- delayed replicated values can leave a static flame after nitro is released.
+    if not value then stopNitroFlames(veh) end
 end)
 
 qbx.entityStateHandler('nitro', function(veh, netId, value)
@@ -896,6 +896,7 @@ CreateThread(function()
                     })
                     nitroKeyHeld = false
                     nitroActive = 0
+                    stopAllNitroFlames()
                     cruiseOn = false
                 end
                 DisplayRadar(sharedConfig.menu.isOutMapChecked)
