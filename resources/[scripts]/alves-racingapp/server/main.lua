@@ -4,20 +4,6 @@
 print('^2[Alves Racing]^0 Server iniciado!')
 
 -- ==================== CONFIGURAÇÃO ====================
-<<<<<<< HEAD
--- Apenas veículos Classe S (Super Cars)
-local QuickRaceVehicles = {
-    -- JFx Super Cars
-    'arbitergtc', 'arbitergtn', 'cazador', 'cazadortcr',
-    'clubr', 'clubrhyc', 'elegyrh8c', 'elegyxa19', 'elegyxa19ven', 'flashgrs',
-    'growlerc', 'gstasp3', 'gstbanac1', 'gstbanac1b', 'gstbanac1c',
-      'gstevmr1', 'gstpaladingt', 'gstpenf1',
-    'gstpmp7s1', 'gstpmp7s1b', 'gstpmp7s1c', 'gstpmp7s1d', 'gstraid3', 'gstrh5s2', 'gstsettimo1', 'gsttorle1', 'gstturo1',
-    'gstvanguard1b', 'gstxsajest3reptile', 'gstyc1', 'hellfirec', 'nwjester',
-    's790', 'schlag',  'sr8', 'str', 'strcoupe',
-     'vulture',
-}
-=======
 local function getRaceVehicles()
     if Config.RaceVehicles and #Config.RaceVehicles > 0 then
         return Config.RaceVehicles
@@ -26,7 +12,6 @@ local function getRaceVehicles()
     -- Fallback seguro caso alguém apague a lista do config.lua.
     return { 'sultanrs' }
 end
->>>>>>> 3a1ac187576520f3e2ddd17a2d54ef782625e31f
 
 -- Sistema de Tiers ELO
 local ELO_TIERS = {
