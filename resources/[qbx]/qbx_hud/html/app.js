@@ -946,66 +946,74 @@ app2.mount("#ui-container");
 window.alvesNitroAudio = (() => {
   let ctx;
   let master;
-  let rumble;
-  let whistle;
-  let noise;
+  let airFilter;
+  let bodyFilter;
+  let airGain;
+  let bodyGain;
   let noiseSource;
-  let active = false;
+
+  function createPressureNoiseBuffer(context) {
+    const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    let smoothed = 0;
+    for (let i = 0; i < data.length; i++) {
+      smoothed = (smoothed * 0.985) + ((Math.random() * 2 - 1) * 0.015);
+      data[i] = smoothed * 2.8;
+    }
+    return buffer;
+  }
 
   function ensure() {
     if (ctx) return;
     ctx = new (window.AudioContext || window.webkitAudioContext)();
+
     master = ctx.createGain();
     master.gain.value = 0;
     master.connect(ctx.destination);
 
-    rumble = ctx.createOscillator();
-    rumble.type = 'sawtooth';
-    rumble.frequency.value = 72;
-    const rumbleGain = ctx.createGain();
-    rumbleGain.gain.value = 0.11;
-    rumble.connect(rumbleGain);
-    rumbleGain.connect(master);
-    rumble.start();
-
-    whistle = ctx.createOscillator();
-    whistle.type = 'triangle';
-    whistle.frequency.value = 920;
-    const whistleGain = ctx.createGain();
-    whistleGain.gain.value = 0.045;
-    whistle.connect(whistleGain);
-    whistleGain.connect(master);
-    whistle.start();
-
-    const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.55;
     noiseSource = ctx.createBufferSource();
-    noiseSource.buffer = buffer;
+    noiseSource.buffer = createPressureNoiseBuffer(ctx);
     noiseSource.loop = true;
-    noise = ctx.createBiquadFilter();
-    noise.type = 'bandpass';
-    noise.frequency.value = 1850;
-    noise.Q.value = 0.9;
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.value = 0.18;
-    noiseSource.connect(noise);
-    noise.connect(noiseGain);
-    noiseGain.connect(master);
+
+    airFilter = ctx.createBiquadFilter();
+    airFilter.type = 'bandpass';
+    airFilter.frequency.value = 1250;
+    airFilter.Q.value = 0.55;
+    airGain = ctx.createGain();
+    airGain.gain.value = 0.22;
+
+    bodyFilter = ctx.createBiquadFilter();
+    bodyFilter.type = 'lowpass';
+    bodyFilter.frequency.value = 260;
+    bodyFilter.Q.value = 0.45;
+    bodyGain = ctx.createGain();
+    bodyGain.gain.value = 0.10;
+
+    noiseSource.connect(airFilter);
+    airFilter.connect(airGain);
+    airGain.connect(master);
+
+    noiseSource.connect(bodyFilter);
+    bodyFilter.connect(bodyGain);
+    bodyGain.connect(master);
+
     noiseSource.start();
   }
 
   function setActive(nextActive, mode = 'balanced') {
     ensure();
     if (ctx.state === 'suspended') ctx.resume();
+
     const now = ctx.currentTime;
-    active = !!nextActive;
-    const volume = active ? (mode === 'power' ? 0.34 : mode === 'eco' ? 0.24 : 0.29) : 0.0001;
-    rumble.frequency.setTargetAtTime(mode === 'power' ? 86 : 72, now, 0.04);
-    whistle.frequency.setTargetAtTime(mode === 'eco' ? 760 : mode === 'power' ? 1120 : 940, now, 0.05);
-    noise.frequency.setTargetAtTime(mode === 'power' ? 2250 : 1850, now, 0.06);
+    const active = !!nextActive;
+    const volume = active ? (mode === 'power' ? 0.18 : mode === 'eco' ? 0.11 : 0.14) : 0.0001;
+    const airFreq = mode === 'power' ? 1480 : mode === 'eco' ? 980 : 1220;
+    const bodyFreq = mode === 'power' ? 310 : mode === 'eco' ? 210 : 260;
+
+    airFilter.frequency.setTargetAtTime(airFreq, now, 0.10);
+    bodyFilter.frequency.setTargetAtTime(bodyFreq, now, 0.12);
     master.gain.cancelScheduledValues(now);
-    master.gain.setTargetAtTime(volume, now, active ? 0.035 : 0.12);
+    master.gain.setTargetAtTime(volume, now, active ? 0.08 : 0.18);
   }
 
   return { setActive };
