@@ -1,15 +1,40 @@
 # Alves Racing - pacote plug-and-play
 
-Pacote para testar o sistema de corridas em outro servidor **Qbox/FiveM**.
+Pacote para testar o sistema de corridas em outro servidor **Qbox/FiveM** sem levar configurações globais do servidor Alves Racing.
 
 ## O que vai no pacote
 
 ```txt
 INSTALL.sql
 server.cfg.example
-resources/[alves]/alves-racing-core
 resources/[alves]/alves-racingapp
 ```
+
+## O que este pacote faz
+
+- Tablet/dashboard de corridas.
+- Lobby casual/ranked com votação de pista e veículo.
+- Start da corrida com spawn do veículo escolhido no grid.
+- Checkpoints, voltas automáticas e HUD de corrida.
+- ELO/ranking.
+- Histórico/scoreboard de corridas.
+- Preset visual por jogador/veículo.
+- Phase/ghost durante corrida para evitar colisão entre competidores.
+
+## O que NÃO vai no pacote
+
+Essas coisas são configuração do servidor, não do script de corrida:
+
+- Blip/ícone fixo no mapa.
+- Ped obrigatório para todos os jogadores.
+- Limpeza global de NPC/tráfego/despacho.
+- Imortalidade global fora da corrida.
+- Fuel global forçado.
+- Anti-eject/seatbelt global.
+- Comandos globais de tuning tipo `/tuning`, `/bennys`, `/custom`.
+- Qualquer alteração de HUD global do servidor.
+
+Se o servidor quiser esses comportamentos, ele deve configurar isso nos próprios resources do servidor, separado do `alves-racingapp`.
 
 ## Requisitos no servidor do seu colega
 
@@ -19,11 +44,10 @@ Obrigatórios:
 - `ox_lib`
 - `oxmysql`
 - banco MySQL/MariaDB configurado no servidor
-- pacote de veículos JFx iniciado antes do `alves-racingapp`
 
 Opcional:
 
-- `qbx_customs` — só para os comandos `/tuning`, `/bennys`, `/custom`, `/customizar`.
+- Qualquer pack/resource de veículos addon/custom, caso ele queira usar carros além dos vanilla.
 
 > Importante: isso é plug-and-play para **Qbox**. Não é standalone puro sem framework.
 
@@ -49,16 +73,14 @@ ensure oxmysql
 ensure ox_lib
 ensure qbx_core
 
-# Veículos custom usados nas corridas
-ensure [JFx]
-
-# Opcional, apenas para tuning visual
-# ensure qbx_customs
+# Se usar veículos addon/custom, inicie eles antes do alves-racingapp.
+# Exemplos:
+# ensure [carros]
+# ensure vipcars
 
 setr alves:themePrimary "#8b5cf6"
 setr alves:themeBackground "#080712"
 
-ensure alves-racing-core
 ensure alves-racingapp
 ```
 
@@ -66,7 +88,6 @@ ensure alves-racingapp
 
 ```txt
 refresh
-ensure alves-racing-core
 ensure alves-racingapp
 ```
 
@@ -78,39 +99,38 @@ ensure alves-racingapp
 - `F2` abre/fecha lobby minimizado.
 - `F3` sai do lobby.
 - `/sair` sai da corrida.
-- `/salvarpreset` salva o visual atual do veículo.
+- `/salvarpreset` salva o visual atual do veículo para aquele modelo.
 
 ## Carros do pacote
 
-O pacote já vai com a lista de veículos JFx em `QuickRaceVehicles`.
-
-Garanta que o resource/grupo dos carros esteja iniciado antes do `alves-racingapp`:
-
-```cfg
-ensure [JFx]
-ensure alves-racing-core
-ensure alves-racingapp
-```
-
-Se ele quiser trocar/adicionar carros, edite:
+A lista de carros fica em:
 
 ```txt
-resources/[alves]/alves-racingapp/server/main.lua
+resources/[alves]/alves-racingapp/config.lua
 ```
 
-## Recursos principais
+Edite `Config.RaceVehicles` com os **spawn names** dos carros que existem na base:
 
-- Lobby casual/ranked com votação de pista e veículo.
-- ELO por tiers.
-- Histórico/scoreboard de corridas.
-- Preset visual por jogador/veículo.
-- Phase/ghost durante corrida: competidores não colidem entre si.
-- Players imortais, sem ragdoll/ejeção, combustível fixo 100.
-- Performance máxima aplicada nos veículos.
-- HUD/tablet com tema roxo configurável por convar.
+```lua
+Config.RaceVehicles = {
+    'sultanrs',
+    'elegy',
+    'jester3',
+    'comet5',
+    'meucarroaddon',
+}
+```
+
+Não importa se o carro está em `[JFx]`, `[carros]`, `vipcars`, `donatecars` ou qualquer outro resource. O que importa é:
+
+1. o resource do carro iniciar antes do `alves-racingapp`;
+2. o spawn name estar correto em `Config.RaceVehicles`.
+
+Se um modelo não existir/carregar, o client usa fallback `sultanrs` e mostra erro no console/notificação em vez de travar em tela preta.
 
 ## Observações
 
 - O banco precisa ter pelo menos uma pista. O `INSTALL.sql` já cria uma pista demo.
 - Para produção, substitua a pista demo pelas pistas reais do servidor.
-- Se `qbx_customs` não estiver instalado, as corridas funcionam; apenas os comandos de tuning avisam que o recurso não está iniciado.
+- O pacote não mexe em `/car` ou spawn normal do servidor. Se carro fora da corrida nascer quebrado, a origem deve ser outro resource do servidor.
+- Dentro da corrida, o veículo spawnado pelo lobby é corrigido com `SetVehicleFixed`, vida cheia e sujeira zerada antes da largada.
