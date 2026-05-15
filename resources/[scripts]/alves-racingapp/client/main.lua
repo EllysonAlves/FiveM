@@ -524,6 +524,22 @@ local function applySavedVisualPreset(vehicle, modelName)
     if preset then applyVehicleVisualPreset(vehicle, preset) end
 end
 
+
+local function prepareGarageVehicle(vehicle)
+    if not DoesEntityExist(vehicle) then return end
+
+    SetVehicleNeedsToBeHotwired(vehicle, false)
+    SetVehicleHasBeenOwnedByPlayer(vehicle, true)
+    SetEntityAsMissionEntity(vehicle, true, false)
+    SetVehicleIsStolen(vehicle, false)
+    SetVehicleIsWanted(vehicle, false)
+    SetVehicleEngineOn(vehicle, true, true, true)
+    SetPedIntoVehicle(PlayerPedId(), vehicle, -1)
+    SetVehicleOnGroundProperly(vehicle)
+    SetVehicleRadioEnabled(vehicle, true)
+    SetVehRadioStation(vehicle, 'OFF')
+end
+
 function disableRaceVehiclePhase()
     local vehicle = phasedVehicle
     if (not vehicle or vehicle == 0 or not DoesEntityExist(vehicle)) and CurrentRaceData.Vehicle then
@@ -591,6 +607,55 @@ end, false)
 
 TriggerEvent('chat:addSuggestion', '/salvarpreset', 'Salva o visual do carro atual para respawn/corridas')
 
+
+local function resolveGroundSpawn(x, y, z)
+    local baseZ = tonumber(z) or 0.0
+    RequestCollisionAtCoord(x, y, baseZ)
+
+    local deadline = GetGameTimer() + 2500
+    local groundFound, groundZ = false, baseZ
+
+    while GetGameTimer() < deadline do
+        for _, probeZ in ipairs({ baseZ + 2.0, baseZ + 15.0, baseZ + 40.0, 1000.0 }) do
+            groundFound, groundZ = GetGroundZFor_3dCoord(x, y, probeZ, false)
+            if groundFound then
+                return groundZ + 0.35
+            end
+        end
+        RequestCollisionAtCoord(x, y, baseZ)
+        Wait(50)
+    end
+
+    return baseZ + 0.35
+end
+
+local function settleRaceVehicleOnGround(vehicle, x, y, z, heading)
+    if not DoesEntityExist(vehicle) then return end
+
+    RequestCollisionAtCoord(x, y, z)
+    SetEntityCoordsNoOffset(vehicle, x, y, z, false, false, false)
+    SetEntityHeading(vehicle, heading or 0.0)
+
+    for _ = 1, 20 do
+        RequestCollisionAtCoord(x, y, z)
+        SetVehicleOnGroundProperly(vehicle)
+        if HasCollisionLoadedAroundEntity(vehicle) then
+            local coords = GetEntityCoords(vehicle)
+            local found, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z + 2.0, false)
+            if found and math.abs(coords.z - groundZ) < 1.5 then
+                return
+            end
+        end
+        Wait(50)
+    end
+
+    local found, groundZ = GetGroundZFor_3dCoord(x, y, z + 10.0, false)
+    if found then
+        SetEntityCoordsNoOffset(vehicle, x, y, groundZ + 0.35, false, false, false)
+        SetVehicleOnGroundProperly(vehicle)
+    end
+end
+
 function startRaceSession(result)
     if not result then
         lib.notify({ type = 'error', description = 'Erro ao iniciar corrida' })
@@ -620,9 +685,9 @@ function startRaceSession(result)
     local lateralRad = math.rad(heading + 90.0)
     local spawnX = startCoords.x + math.sin(lateralRad) * gridOffset
     local spawnY = startCoords.y + math.cos(lateralRad) * gridOffset
-    local spawnZ = startCoords.z + 1.0
+    local spawnZ = resolveGroundSpawn(spawnX, spawnY, startCoords.z)
 
-    SetEntityCoords(ped, spawnX, spawnY, spawnZ, false, false, false, false)
+    SetEntityCoords(ped, spawnX, spawnY, spawnZ + 0.5, false, false, false, false)
     SetEntityHeading(ped, heading)
 
     local requestedModel = result.vehicleModel or 'sultanrs'
@@ -644,8 +709,8 @@ function startRaceSession(result)
         return
     end
 
-    local veh = CreateVehicle(model, spawnX, spawnY, startCoords.z + 0.5, heading, true, false)
-    SetVehicleOnGroundProperly(veh)
+    local veh = CreateVehicle(model, spawnX, spawnY, spawnZ, heading, true, false)
+    settleRaceVehicleOnGround(veh, spawnX, spawnY, spawnZ, heading)
     SetPedIntoVehicle(ped, veh, -1)
     SetVehicleEngineOn(veh, true, true, false)
     SetModelAsNoLongerNeeded(model)
@@ -811,6 +876,75 @@ RegisterNUICallback('lobbyVote', function(data, cb)
         if lobby then
             SendNUIMessage({ action = 'showLobby', data = lobby })
         end
+    end)
+end)
+
+
+RegisterNUICallback('showGarage', function(_, cb)
+    cb('ok')
+
+    CreateThread(function()
+        local vehicles = getRaceVehicleModels()
+        SendNUIMessage({ action = 'showGarage', data = { vehicles = vehicles } })
+    end)
+end)
+
+RegisterNUICallback('spawnGarageVehicle', function(data, cb)
+    cb('ok')
+
+    CreateThread(function()
+        local modelName = data and data.modelName and tostring(data.modelName):lower() or nil
+        if not modelName or modelName == '' then
+            SendNUIMessage({ action = 'garageSpawnFail', data = { name = 'Veículo', message = 'Modelo inválido.' } })
+            return
+        end
+
+        local netId = lib.callback.await('alves-racingapp:server:spawnGarageVehicle', false, modelName)
+        if not netId then
+            SendNUIMessage({ action = 'garageSpawnFail', data = { name = modelName, message = 'Modelo indisponível ou não carregado no servidor.' } })
+            return
+        end
+
+        local veh, attempts = nil, 0
+        repeat
+            veh = NetToVeh(netId)
+            Wait(100)
+            attempts = attempts + 1
+        until DoesEntityExist(veh) or attempts > 50
+
+        if not DoesEntityExist(veh) then
+            SendNUIMessage({ action = 'garageSpawnFail', data = { name = modelName, message = 'Veículo spawnou, mas não sincronizou no client.' } })
+            return
+        end
+
+        applySavedVisualPreset(veh, modelName)
+        prepareGarageVehicle(veh)
+        SendNUIMessage({ action = 'garageSpawnOk', data = { name = modelName } })
+    end)
+end)
+
+RegisterNUICallback('saveGaragePreset', function(_, cb)
+    cb('ok')
+
+    CreateThread(function()
+        local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+        if not DoesEntityExist(vehicle) then
+            SendNUIMessage({ action = 'garagePresetFail', data = { message = 'Entre em um carro para salvar o visual.' } })
+            return
+        end
+
+        local modelName = getVehicleModelName(vehicle)
+        if not modelName or modelName == '' then
+            SendNUIMessage({ action = 'garagePresetFail', data = { message = 'Modelo do veículo não identificado.' } })
+            return
+        end
+
+        local ok = lib.callback.await('alves-racingapp:saveVehiclePreset', false, {
+            vehicleModel = modelName,
+            preset = captureVehicleVisualPreset(vehicle)
+        })
+
+        SendNUIMessage({ action = ok and 'garagePresetOk' or 'garagePresetFail', data = { name = modelName } })
     end)
 end)
 

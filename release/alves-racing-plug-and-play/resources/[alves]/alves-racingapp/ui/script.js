@@ -79,6 +79,11 @@ window.addEventListener('message', function(event) {
         case 'showScoreboard': displayScoreboard(data.data || {}); break;
         case 'showRanking': displayRanking(data.data || {}); break;
         case 'showProfile': displayProfile(data.data || {}); break;
+        case 'showGarage': displayGarage(data.data || {}); break;
+        case 'garageSpawnOk': garageFeedback(data.data?.name || 'Veículo', true); break;
+        case 'garageSpawnFail': garageFeedback(data.data?.name || 'Veículo', false, data.data?.message); break;
+        case 'garagePresetOk': garageFeedback(data.data?.name || 'Preset', true, 'Preset visual salvo.'); break;
+        case 'garagePresetFail': garageFeedback(data.data?.name || 'Preset', false, data.data?.message || 'Falha ao salvar preset.'); break;
         case 'showLobby': displayLobby(data.data || {}); break;
         case 'hideLobby': hideLobby(); break;
         case 'minimizeLobby': minimizeLobby(false); break;
@@ -190,6 +195,14 @@ function showDashboard() {
 function showComingSoon(name) {
     $$('.modal').forEach(m => m.classList.add('hidden'));
     displayInfoModal(name, 'Área preparada para a identidade visual do servidor. Funcionalidade pode ser conectada na próxima fase.');
+}
+
+function showGarage() {
+    setActiveMenu('GARAGEM');
+    $$('.modal').forEach(m => m.classList.add('hidden'));
+    setHtml('#garage-list', '<div class="garage-empty">Carregando veículos...</div>');
+    removeClass('#modal-garage', 'hidden');
+    nuiPost('showGarage');
 }
 
 function displayInfoModal(title, message) {
@@ -564,6 +577,69 @@ function displayProfile(data) {
 
     removeClass('#modal-profile', 'hidden');
 }
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function garageFeedback(name, ok, message) {
+    const text = message || (ok ? `${name} spawnado.` : `Não consegui spawnar ${name}.`);
+    const cls = ok ? 'garage-toast ok' : 'garage-toast error';
+    const existing = $('#garage-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'garage-toast';
+    toast.className = cls;
+    toast.textContent = text;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2600);
+}
+
+function displayGarage(data = {}) {
+    const vehicles = Array.isArray(data.vehicles) ? data.vehicles : [];
+    if (!vehicles.length) {
+        setHtml('#garage-list', '<div class="garage-empty">Nenhum veículo configurado em Config.RaceVehicles.</div>');
+        removeClass('#modal-garage', 'hidden');
+        return;
+    }
+
+    const html = vehicles.map((vehicle, index) => {
+        const model = typeof vehicle === 'string' ? vehicle : vehicle.modelName;
+        const name = (typeof vehicle === 'object' && vehicle.name) ? vehicle.name : String(model || '').toUpperCase();
+        const safeModel = escapeHtml(model);
+        const safeName = escapeHtml(name);
+        const jsModel = String(model || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `
+            <div class="garage-card">
+                <div class="garage-card-top">
+                    <span class="garage-index">#${String(index + 1).padStart(2, '0')}</span>
+                    <span class="garage-class">Classe S</span>
+                </div>
+                <strong>${safeName}</strong>
+                <small>${safeModel}</small>
+                <button onclick="spawnGarageVehicle('${jsModel}')">Spawnar veículo</button>
+            </div>
+        `;
+    }).join('');
+
+    setHtml('#garage-list', html);
+    removeClass('#modal-garage', 'hidden');
+}
+
+function spawnGarageVehicle(modelName) {
+    if (!modelName) return;
+    nuiPost('spawnGarageVehicle', { modelName });
+}
+
+function saveGaragePreset() {
+    nuiPost('saveGaragePreset');
+}
+
 function closeModal() {
     $$('.modal').forEach(m => m.classList.add('hidden'));
 }

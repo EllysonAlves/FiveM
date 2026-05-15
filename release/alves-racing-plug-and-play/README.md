@@ -13,6 +13,7 @@ resources/[alves]/alves-racingapp
 ## O que este pacote faz
 
 - Tablet/dashboard de corridas.
+- Menu lateral **GARAGEM** com a lista de `Config.RaceVehicles` e spawn de veículos de corrida.
 - Lobby casual/ranked com votação de pista e veículo.
 - Start da corrida com spawn do veículo escolhido no grid.
 - Checkpoints, voltas automáticas e HUD de corrida.
@@ -102,7 +103,8 @@ ensure alves-racingapp
 - `F2` abre/fecha lobby minimizado.
 - `F3` sai do lobby.
 - `/sair` sai da corrida.
-- `/salvarpreset` salva o visual atual do veículo para aquele modelo.
+- Menu **GARAGEM** lista/spawna os veículos configurados para corrida.
+- `/salvarpreset` ou o botão **Salvar visual atual** na garagem salva o visual atual do veículo para aquele modelo.
 
 ## Carros do pacote
 

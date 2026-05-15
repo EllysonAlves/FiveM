@@ -90,8 +90,8 @@ ensure ox_target
 ensure qbx_spawn
 ensure qbx_hud
 
-# Veículos JFx precisam subir antes do dashboard e das corridas,
-# senão /carros e lobby podem tentar spawnar modelos que ainda não existem no client.
+# Veículos JFx precisam subir antes do alves-racingapp,
+# senão garagem e lobby podem tentar spawnar modelos que ainda não existem no client.
 ensure [JFx]
 
 ensure qbx_vehiclekeys
@@ -110,8 +110,7 @@ ensure [assets]
 # Alves Racing App - sistema principal de corrida/ranking/ELO
 ensure alves-racingapp
 
-# Dashboard /carros usa a lista QuickRaceVehicles do alves-racingapp.
-ensure cw-vehicledash
+# A garagem/listagem de veículos agora fica dentro do próprio alves-racingapp.
 
 # CW Racing App - Backup/Referência (DESATIVADO)
 # Movido para: resources/[scripts-backup]/cw-racingapp

@@ -823,6 +823,40 @@ lib.callback.register('alves-racingapp:getQuickRaceVehicles', function(src)
     return getRaceVehicles()
 end)
 
+
+lib.callback.register('alves-racingapp:server:spawnGarageVehicle', function(src, modelName)
+    modelName = modelName and tostring(modelName):lower() or nil
+    if not modelName or modelName == '' then return nil end
+
+    local allowed = false
+    for _, vehicle in ipairs(getRaceVehicles()) do
+        if tostring(vehicle):lower() == modelName then
+            allowed = true
+            break
+        end
+    end
+    if not allowed then return nil end
+
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return nil end
+
+    local bucket = GetPlayerRoutingBucket(src)
+    local netId, vehicle = qbx.spawnVehicle({
+        model = modelName,
+        spawnSource = ped,
+        warp = true,
+        bucket = bucket
+    })
+
+    if not vehicle or vehicle == 0 then return nil end
+
+    if GetResourceState('qbx_vehiclekeys') == 'started' then
+        exports.qbx_vehiclekeys:GiveKeys(src, vehicle)
+    end
+
+    return netId
+end)
+
 lib.callback.register('alves-racingapp:getMyProfile', function(src)
     print(string.format('[Alves Racing] getMyProfile chamado por source %d', src))
     

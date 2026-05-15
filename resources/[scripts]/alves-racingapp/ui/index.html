@@ -32,7 +32,7 @@
                         <span class="ui-icon">🏆</span>
                         <span>RANKING</span>
                     </div>
-                    <div class="menu-item" onclick="showComingSoon('Garagem')">
+                    <div class="menu-item" onclick="showGarage()">
                         <span class="ui-icon">🏎️</span>
                         <span>GARAGEM</span>
                     </div>
@@ -226,6 +226,33 @@
                         <!-- Conteúdo dinâmico -->
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL GARAGEM -->
+    <div id="modal-garage" class="modal hidden">
+        <div class="modal-content garage-modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span class="ui-icon">🏎️</span>
+                    <h2>GARAGEM</h2>
+                </div>
+                <button class="modal-close" onclick="closeModal()">
+                    <span class="ui-icon">×</span>
+                </button>
+            </div>
+            <div class="modal-body garage-body">
+                <div class="garage-topline">
+                    <div>
+                        <h3>Veículos de corrida</h3>
+                        <p>Lista carregada direto do <strong>Config.RaceVehicles</strong>. Spawna veículos para uso livre, sem aplicar proteção de corrida fora das corridas.</p>
+                    </div>
+                    <button class="garage-save-btn" onclick="saveGaragePreset()">Salvar visual atual</button>
+                </div>
+                <div id="garage-list" class="garage-grid">
+                    <!-- Conteúdo dinâmico -->
+                </div>
             </div>
         </div>
     </div>
