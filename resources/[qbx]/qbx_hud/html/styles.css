@@ -1489,7 +1489,8 @@ speed:after{
   grid-template-columns:repeat(2, 1fr);
   gap:4px;
 }
-.ref-tire{
+.ref-tire,
+.ref-brake{
   min-width:0;
   display:flex;
   align-items:center;
@@ -1503,15 +1504,29 @@ speed:after{
   font-weight:950;
   letter-spacing:.35px;
 }
-.ref-tire span{ font-size:7px; color:rgba(245,243,255,.62); }
-.ref-tire strong{ font-size:9px; color:#d8b4fe; min-width:24px; text-align:right; }
-.ref-tire em{ display:none; }
-.ref-tire.cold strong{ color:#60a5fa; text-shadow:0 0 8px rgba(96,165,250,.65); }
-.ref-tire.warming strong{ color:#a3e635; text-shadow:0 0 8px rgba(163,230,53,.58); }
-.ref-tire.ideal strong{ color:#22c55e; text-shadow:0 0 8px rgba(34,197,94,.65); }
+.ref-brake{
+  width:108px;
+  margin-top:5px;
+}
+.ref-tire span,
+.ref-brake span{ font-size:7px; color:rgba(245,243,255,.62); }
+.ref-tire strong,
+.ref-brake strong{ font-size:9px; color:#d8b4fe; min-width:24px; text-align:right; }
+.ref-tire em,
+.ref-brake em{ display:none; }
+.ref-tire.cold strong,
+.ref-brake.cold strong{ color:#60a5fa; text-shadow:0 0 8px rgba(96,165,250,.65); }
+.ref-tire.warming strong,
+.ref-brake.warming strong{ color:#a3e635; text-shadow:0 0 8px rgba(163,230,53,.58); }
+.ref-tire.ideal strong,
+.ref-brake.ideal strong{ color:#22c55e; text-shadow:0 0 8px rgba(34,197,94,.65); }
 .ref-tire.hot strong{ color:#facc15; text-shadow:0 0 8px rgba(250,204,21,.72); }
-.ref-tire.overheated strong{ color:#f97316; text-shadow:0 0 8px rgba(249,115,22,.75); }
-.ref-tire.critical strong{ color:#ef4444; text-shadow:0 0 8px rgba(239,68,68,.75); }
+.ref-tire.overheated strong,
+.ref-brake.overheated strong{ color:#f97316; text-shadow:0 0 8px rgba(249,115,22,.75); }
+.ref-tire.critical strong,
+.ref-brake.critical strong{ color:#ef4444; text-shadow:0 0 8px rgba(239,68,68,.75); }
 .ref-tire.hot{ border-color:rgba(250,204,21,.38); }
-.ref-tire.overheated{ border-color:rgba(249,115,22,.42); background:rgba(45,24,10,.62); }
-.ref-tire.critical{ border-color:rgba(239,68,68,.46); background:rgba(45,10,14,.68); }
+.ref-tire.overheated,
+.ref-brake.overheated{ border-color:rgba(249,115,22,.42); background:rgba(45,24,10,.62); }
+.ref-tire.critical,
+.ref-brake.critical{ border-color:rgba(239,68,68,.46); background:rgba(45,10,14,.68); }

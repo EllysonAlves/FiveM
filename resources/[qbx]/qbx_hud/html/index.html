@@ -335,6 +335,11 @@
                                     <em>{{ tires[key].grip }}%</em>
                                 </div>
                             </div>
+                            <div class="ref-brake" :class="brakeState">
+                                <span>FREIO</span>
+                                <strong>{{ brakeTemp }}°</strong>
+                                <em>{{ brakeFactor }}%</em>
+                            </div>
                         </div>
                     </div>
                 </div>

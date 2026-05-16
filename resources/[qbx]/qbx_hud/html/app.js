@@ -1035,6 +1035,8 @@ const vehHud = {
       tireTemp: 30,
       tireGrip: 86,
       tireWear: 0,
+      brakeTemp: 30,
+      brakeFactor: 78,
       tireOrder: ['lf', 'rf', 'lr', 'rr'],
       tires: {
         lf: { label: 'DE', temp: 30, grip: 86, wear: 0 },
@@ -1102,6 +1104,14 @@ const vehHud = {
     nitroModeLabel() {
       return this.nitroPalette.label;
     },
+    brakeState() {
+      const temp = Number(this.brakeTemp || 30);
+      if (temp >= 700) return 'critical';
+      if (temp >= 520) return 'overheated';
+      if (temp >= 180) return 'ideal';
+      if (temp >= 80) return 'warming';
+      return 'cold';
+    },
     beltText() {
       return this.seatbelt === 1 ? 'ON' : 'OFF';
     },
@@ -1141,6 +1151,8 @@ const vehHud = {
       this.tireTemp = Math.max(0, Math.min(170, Math.round(data.tireTemp ?? this.tireTemp ?? 30)));
       this.tireGrip = Math.max(0, Math.min(120, Math.round(data.tireGrip ?? this.tireGrip ?? 86)));
       this.tireWear = Math.max(0, Math.min(100, Math.round(data.tireWear ?? this.tireWear ?? 0)));
+      this.brakeTemp = Math.max(0, Math.min(900, Math.round(data.brakeTemp ?? this.brakeTemp ?? 30)));
+      this.brakeFactor = Math.max(0, Math.min(130, Math.round(data.brakeFactor ?? this.brakeFactor ?? 78)));
       if (data.tires) {
         this.tires = {
           lf: this.normalizeTire('lf', data.tires.lf),

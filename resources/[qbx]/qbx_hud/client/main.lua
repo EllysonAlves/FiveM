@@ -21,11 +21,14 @@ local nitroFlameEffects = {}
 local tireTemp = 30.0
 local tireWear = 0.0
 local tireGrip = 0.86
+local brakeTemp = 30.0
+local brakeFactor = 0.78
 local tireHandlingVehicle = 0
 local tireBaseHandling = nil
 local lastTireSpeedKmh = 0.0
 local tireKeys = { 'lf', 'rf', 'lr', 'rr' }
 local tireLabels = { lf = 'DE', rf = 'DD', lr = 'TE', rr = 'TD' }
+local tireWheelIndex = { lf = 0, rf = 1, lr = 2, rr = 3 }
 local tireTelemetry = {
     lf = { label = 'DE', temp = 30.0, wear = 0.0, grip = 0.86 },
     rf = { label = 'DD', temp = 30.0, wear = 0.0, grip = 0.86 },
@@ -795,7 +798,7 @@ local function updatePlayerHud(data)
     end
 end
 
-local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+local prevVehicleStats = {nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 
 local function updateVehicleHud(data)
     local shouldUpdate = false
@@ -825,6 +828,8 @@ local function updateVehicleHud(data)
             tireGrip = data[16],
             tireWear = data[17],
             tires = data[18],
+            brakeTemp = data[19],
+            brakeFactor = data[20],
         })
     end
 end
@@ -853,6 +858,8 @@ local function resetTireHandling(vehicle)
         tireTemp = 30.0
         tireWear = 0.0
         tireGrip = 0.86
+        brakeTemp = 30.0
+        brakeFactor = 0.78
         for _, key in ipairs(tireKeys) do
             tireTelemetry[key] = { label = tireLabels[key], temp = 30.0, wear = 0.0, grip = 0.86 }
         end
@@ -878,21 +885,44 @@ end
 local function getTireGripFactor(temp, wear)
     local tempFactor
     if temp < 40.0 then
-        tempFactor = 0.72 + ((temp / 40.0) * 0.12) -- muito frio: pouco grip
+        tempFactor = 0.58 + ((temp / 40.0) * 0.16) -- muito frio: escorrega fácil
     elseif temp < 70.0 then
-        tempFactor = 0.84 + (((temp - 40.0) / 30.0) * 0.16) -- aquecendo
+        tempFactor = 0.74 + (((temp - 40.0) / 30.0) * 0.26) -- aquecendo
     elseif temp <= 95.0 then
         tempFactor = 1.04 -- sweet spot: 70°C ~ 95°C
     elseif temp <= 110.0 then
-        tempFactor = 1.04 - (((temp - 95.0) / 15.0) * 0.08) -- quente: perda leve
+        tempFactor = 1.04 - (((temp - 95.0) / 15.0) * 0.12) -- quente: perda perceptível
     elseif temp <= 130.0 then
-        tempFactor = 0.96 - (((temp - 110.0) / 20.0) * 0.18) -- superaquecido
+        tempFactor = 0.92 - (((temp - 110.0) / 20.0) * 0.24) -- superaquecido: perda forte
     else
-        tempFactor = 0.74 -- burnout extremo / crítico
+        tempFactor = 0.62 -- burnout extremo / crítico
     end
 
-    local wearFactor = 1.0 - math.min(0.14, (wear / 100.0) * 0.14)
-    return math.max(0.68, math.min(1.04, tempFactor * wearFactor))
+    local wearFactor = 1.0 - math.min(0.18, (wear / 100.0) * 0.18)
+    return math.max(0.55, math.min(1.04, tempFactor * wearFactor))
+end
+
+local function getBrakeFactor(temp)
+    if temp < 80.0 then
+        return 0.62 + ((temp / 80.0) * 0.18) -- freio frio: mordida fraca
+    elseif temp < 180.0 then
+        return 0.80 + (((temp - 80.0) / 100.0) * 0.20)
+    elseif temp <= 520.0 then
+        return 1.03 -- janela ideal ampla
+    elseif temp <= 700.0 then
+        return 1.03 - (((temp - 520.0) / 180.0) * 0.23)
+    end
+
+    return 0.68 -- fade forte
+end
+
+local function getWheelSlipKmh(vehicle, wheelIndex, vehicleSpeedKmh)
+    if not GetVehicleWheelSpeed then return 0.0 end
+
+    local ok, wheelSpeed = pcall(GetVehicleWheelSpeed, vehicle, wheelIndex)
+    if not ok or not wheelSpeed then return 0.0 end
+
+    return math.max(0.0, math.abs(wheelSpeed) * 3.6 - vehicleSpeedKmh)
 end
 
 local function updateTireSystem(vehicle, delta)
@@ -913,9 +943,22 @@ local function updateTireSystem(vehicle, delta)
     local airborne = IsEntityInAir(vehicle)
     local turningLeft = steerAngle > 0.0
     local decel = math.max(0.0, (lastTireSpeedKmh - speed) / math.max(delta, 0.001))
-    local braking = IsControlPressed(0, 72) or decel > 80.0
+    local brakingInput = IsControlPressed(0, 72)
+    local braking = (brakingInput and speed > 8.0) or decel > 80.0
     local driveBiasFront = math.max(0.0, math.min(1.0, tireBaseHandling.driveBiasFront or 0.5))
+    local localSpeed = GetEntitySpeedVector(vehicle, true)
+    local lateralSlipKmh = math.abs(localSpeed.x or 0.0) * 3.6
     lastTireSpeedKmh = speed
+
+    if braking then
+        local brakeHeat = math.min(115.0, 8.0 + (speed / 180.0) * 34.0 + math.min(45.0, decel / 18.0))
+        brakeTemp = math.min(820.0, brakeTemp + (brakeHeat * delta))
+    else
+        local brakeCoolTarget = 30.0 + math.min(35.0, speed * 0.08)
+        local brakeCoolRate = brakeTemp > 520.0 and 0.22 or 0.075
+        brakeTemp = brakeTemp + ((brakeCoolTarget - brakeTemp) * brakeCoolRate * delta)
+    end
+    brakeFactor = getBrakeFactor(brakeTemp)
 
     local tempSum = 0.0
     local wearSum = 0.0
@@ -929,6 +972,10 @@ local function updateTireSystem(vehicle, delta)
         local axleDriveShare = isFront and driveBiasFront or (1.0 - driveBiasFront)
         local isDriven = axleDriveShare > 0.08
         local drivenLoad = isDriven and (0.55 + (axleDriveShare * 0.90)) or 0.22
+        local wheelSlipKmh = getWheelSlipKmh(vehicle, tireWheelIndex[key], speed)
+        local driftSlipKmh = math.max(0.0, lateralSlipKmh - 7.0) * (isOuter and 1.10 or 0.78)
+        if handbrake and isRear then driftSlipKmh *= 1.55 end
+        local slipKmh = math.max(wheelSlipKmh, driftSlipKmh)
 
         -- Parado/frio ~30°C. Rodar normal deve aquecer devagar; ideal vem depois de uso consistente.
         local targetTemp = 30.0
@@ -955,8 +1002,17 @@ local function updateTireSystem(vehicle, delta)
             heatRate += isFront and 0.025 or 0.012
         end
 
+        if slipKmh > 8.0 then
+            local slipHeat = math.min(30.0, (slipKmh - 8.0) * 0.95)
+            if isDriven then slipHeat *= drivenLoad end
+            if isRear and handbrake then slipHeat *= 1.35 end
+            targetTemp += slipHeat
+            directHeat += math.min(18.0, slipHeat * 0.45)
+            heatRate += 0.035
+        end
+
         if throttle > 0.0 and speed > 8.0 and isDriven then
-            directHeat += math.min(1.0, (speed / 170.0) * 0.65 + 0.20) * axleDriveShare
+            directHeat += math.min(0.55, (speed / 180.0) * 0.34 + 0.12) * axleDriveShare
         end
 
         if handbrake and speed > 25.0 then
@@ -965,8 +1021,8 @@ local function updateTireSystem(vehicle, delta)
             heatRate += isRear and 0.08 or 0.025
         end
 
-        if burnout then
-            -- Burnout/slip continua aquecendo forte, mas respeita eixo motriz.
+        if burnout and slipKmh > 12.0 then
+            -- Burnout real precisa de slip de roda; evita falso aquecimento com W+S sem pneu girando.
             local burnoutLoad = isDriven and drivenLoad or 0.25
             targetTemp += 72.0 * burnoutLoad
             directHeat += 34.0 * burnoutLoad
@@ -988,7 +1044,7 @@ local function updateTireSystem(vehicle, delta)
         if tire.temp > 110.0 then wearGain += (tire.temp - 110.0) * 0.008 end
         if speed > 85.0 and steering > 20.0 and isOuter then wearGain += 0.045 end
         if braking and decel > 110.0 and isFront then wearGain += 0.040 end
-        if burnout and isDriven then wearGain += 0.28 * drivenLoad end
+        if burnout and isDriven and slipKmh > 12.0 then wearGain += 0.28 * drivenLoad end
         if handbrake and speed > 45.0 and isRear then wearGain += 0.075 end
         tire.wear = math.max(0.0, math.min(100.0, tire.wear + (wearGain * delta)))
         tire.grip = getTireGripFactor(tire.temp, tire.wear)
@@ -1002,10 +1058,10 @@ local function updateTireSystem(vehicle, delta)
     tireWear = wearSum / 4.0
     tireGrip = gripSum / 4.0
 
-    local brakeFactor = math.max(0.84, tireGrip - math.min(0.08, tireWear / 1200.0))
+    local tireBrakeFactor = math.max(0.70, tireGrip - math.min(0.10, tireWear / 1000.0))
     SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMax', tireBaseHandling.tractionMax * tireGrip)
     SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMin', tireBaseHandling.tractionMin * tireGrip)
-    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fBrakeForce', tireBaseHandling.brakeForce * brakeFactor)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fBrakeForce', tireBaseHandling.brakeForce * tireBrakeFactor * brakeFactor)
 end
 
 -- HUD Update loop
@@ -1151,6 +1207,8 @@ CreateThread(function()
                         lr = { label = tireTelemetry.lr.label, temp = math.floor(tireTelemetry.lr.temp + 0.5), grip = math.floor(tireTelemetry.lr.grip * 100 + 0.5), wear = math.floor(tireTelemetry.lr.wear + 0.5) },
                         rr = { label = tireTelemetry.rr.label, temp = math.floor(tireTelemetry.rr.temp + 0.5), grip = math.floor(tireTelemetry.rr.grip * 100 + 0.5), wear = math.floor(tireTelemetry.rr.wear + 0.5) },
                     },
+                    math.floor(brakeTemp + 0.5),
+                    math.floor(brakeFactor * 100 + 0.5),
                 })
                 showAltitude = false
                 showSeatbelt = true
@@ -1169,6 +1227,8 @@ CreateThread(function()
                         tireGrip = math.floor(tireGrip * 100 + 0.5),
                         tireWear = math.floor(tireWear + 0.5),
                         tires = tireTelemetry,
+                        brakeTemp = math.floor(brakeTemp + 0.5),
+                        brakeFactor = math.floor(brakeFactor * 100 + 0.5),
                     })
                     nitroKeyHeld = false
                     nitroActive = 0
