@@ -930,47 +930,47 @@ local function updateTireSystem(vehicle, delta)
         local isDriven = axleDriveShare > 0.08
         local drivenLoad = isDriven and (0.55 + (axleDriveShare * 0.90)) or 0.22
 
-        -- Parado/frio ~30°C. Rodando normal demora para chegar no ideal; eixo motriz aquece mais.
+        -- Parado/frio ~30°C. Rodar normal deve aquecer devagar; ideal vem depois de uso consistente.
         local targetTemp = 30.0
         if speed > 3.0 then
-            local rollingTarget = 28.0 + math.min(36.0, speed * 0.22)
-            local drivetrainTarget = throttle * math.min(22.0, (speed / 150.0) * 16.0 + 4.0) * drivenLoad
+            local rollingTarget = 27.0 + math.min(30.0, speed * 0.17)
+            local drivetrainTarget = throttle * math.min(13.0, (speed / 170.0) * 9.0 + 2.0) * drivenLoad
             targetTemp = rollingTarget + drivetrainTarget
         end
-        local heatRate = 0.038 + (throttle * drivenLoad * 0.018)
+        local heatRate = 0.014 + (throttle * drivenLoad * 0.007)
         local directHeat = 0.0
 
-        if speed > 50.0 and steering > 8.0 then
-            local cornerLoad = math.min(24.0, ((speed - 40.0) / 125.0) * (steering / 34.0) * 19.0)
-            if isFront then cornerLoad *= 1.05 end
-            if isOuter then cornerLoad *= 1.34 else cornerLoad *= 0.58 end
+        if speed > 55.0 and steering > 10.0 then
+            local cornerLoad = math.min(16.0, ((speed - 45.0) / 135.0) * (steering / 36.0) * 13.0)
+            if isFront then cornerLoad *= 1.02 end
+            if isOuter then cornerLoad *= 1.30 else cornerLoad *= 0.56 end
             targetTemp += cornerLoad
-            heatRate += 0.040
+            heatRate += 0.018
         end
 
-        if braking and speed > 35.0 then
-            local brakeLoad = math.min(20.0, 4.0 + (speed / 170.0) * 9.0 + math.min(7.0, decel / 80.0))
-            targetTemp += isFront and brakeLoad or (brakeLoad * 0.36)
-            directHeat += isFront and math.min(4.8, decel / 85.0) or math.min(1.8, decel / 180.0)
-            heatRate += isFront and 0.055 or 0.025
+        if braking and speed > 40.0 then
+            local brakeLoad = math.min(13.0, 3.0 + (speed / 180.0) * 6.0 + math.min(4.0, decel / 110.0))
+            targetTemp += isFront and brakeLoad or (brakeLoad * 0.32)
+            directHeat += isFront and math.min(1.8, decel / 190.0) or math.min(0.7, decel / 320.0)
+            heatRate += isFront and 0.025 or 0.012
         end
 
         if throttle > 0.0 and speed > 8.0 and isDriven then
-            directHeat += math.min(4.2, (speed / 140.0) * 2.6 + 0.8) * axleDriveShare
+            directHeat += math.min(1.0, (speed / 170.0) * 0.65 + 0.20) * axleDriveShare
         end
 
         if handbrake and speed > 25.0 then
-            targetTemp += isRear and 18.0 or 5.0
-            directHeat += isRear and 14.0 or 2.5
-            heatRate += isRear and 0.12 or 0.035
+            targetTemp += isRear and 14.0 or 4.0
+            directHeat += isRear and 8.0 or 1.5
+            heatRate += isRear and 0.08 or 0.025
         end
 
         if burnout then
-            -- Burnout/slip injeta calor no eixo motriz. RWD = traseira, FWD = dianteira, AWD = os 4.
+            -- Burnout/slip continua aquecendo forte, mas respeita eixo motriz.
             local burnoutLoad = isDriven and drivenLoad or 0.25
-            targetTemp += 78.0 * burnoutLoad
-            directHeat += 44.0 * burnoutLoad
-            heatRate += 0.24 * burnoutLoad
+            targetTemp += 72.0 * burnoutLoad
+            directHeat += 34.0 * burnoutLoad
+            heatRate += 0.18 * burnoutLoad
         end
 
         if airborne then
@@ -979,7 +979,7 @@ local function updateTireSystem(vehicle, delta)
             heatRate *= 0.35
         end
 
-        local coolRate = tire.temp > 110.0 and 0.22 or 0.055
+        local coolRate = tire.temp > 110.0 and 0.20 or 0.035
         local rate = targetTemp > tire.temp and heatRate or coolRate
         tire.temp = tire.temp + ((targetTemp - tire.temp) * rate * delta) + (directHeat * delta)
         tire.temp = math.max(20.0, math.min(165.0, tire.temp))
