@@ -871,6 +871,7 @@ local function ensureTireHandlingBase(vehicle)
         tractionMax = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMax'),
         tractionMin = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMin'),
         brakeForce = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fBrakeForce'),
+        driveBiasFront = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fDriveBiasFront'),
     }
 end
 
@@ -907,11 +908,13 @@ local function updateTireSystem(vehicle, delta)
     local steerAngle = GetVehicleSteeringAngle(vehicle) or 0.0
     local steering = math.abs(steerAngle)
     local handbrake = IsControlPressed(0, 76)
+    local throttle = IsControlPressed(0, 71) and 1.0 or 0.0
     local burnout = IsVehicleInBurnout(vehicle)
     local airborne = IsEntityInAir(vehicle)
     local turningLeft = steerAngle > 0.0
     local decel = math.max(0.0, (lastTireSpeedKmh - speed) / math.max(delta, 0.001))
     local braking = IsControlPressed(0, 72) or decel > 80.0
+    local driveBiasFront = math.max(0.0, math.min(1.0, tireBaseHandling.driveBiasFront or 0.5))
     lastTireSpeedKmh = speed
 
     local tempSum = 0.0
@@ -923,41 +926,51 @@ local function updateTireSystem(vehicle, delta)
         local isFront = key == 'lf' or key == 'rf'
         local isRear = key == 'lr' or key == 'rr'
         local isOuter = (turningLeft and (key == 'rf' or key == 'rr')) or ((not turningLeft) and (key == 'lf' or key == 'lr'))
+        local axleDriveShare = isFront and driveBiasFront or (1.0 - driveBiasFront)
+        local isDriven = axleDriveShare > 0.08
+        local drivenLoad = isDriven and (0.55 + (axleDriveShare * 0.90)) or 0.22
 
-        -- Temperatura-base de trabalho: parado/frio ~30°C, rodando normal busca 75~85°C.
+        -- Parado/frio ~30°C. Rodando normal demora para chegar no ideal; eixo motriz aquece mais.
         local targetTemp = 30.0
         if speed > 3.0 then
-            targetTemp = 34.0 + math.min(50.0, speed * 0.31)
+            local rollingTarget = 28.0 + math.min(36.0, speed * 0.22)
+            local drivetrainTarget = throttle * math.min(22.0, (speed / 150.0) * 16.0 + 4.0) * drivenLoad
+            targetTemp = rollingTarget + drivetrainTarget
         end
-        local heatRate = 0.075
+        local heatRate = 0.038 + (throttle * drivenLoad * 0.018)
         local directHeat = 0.0
 
-        if speed > 45.0 and steering > 6.0 then
-            local cornerLoad = math.min(32.0, ((speed - 35.0) / 120.0) * (steering / 32.0) * 25.0)
-            if isFront then cornerLoad *= 1.16 end
-            if isOuter then cornerLoad *= 1.36 else cornerLoad *= 0.60 end
+        if speed > 50.0 and steering > 8.0 then
+            local cornerLoad = math.min(24.0, ((speed - 40.0) / 125.0) * (steering / 34.0) * 19.0)
+            if isFront then cornerLoad *= 1.05 end
+            if isOuter then cornerLoad *= 1.34 else cornerLoad *= 0.58 end
             targetTemp += cornerLoad
-            heatRate += 0.08
+            heatRate += 0.040
         end
 
-        if braking and speed > 30.0 then
-            local brakeLoad = math.min(28.0, 5.0 + (speed / 160.0) * 12.0 + math.min(10.0, decel / 70.0))
-            targetTemp += isFront and brakeLoad or (brakeLoad * 0.42)
-            directHeat += isFront and math.min(9.0, decel / 45.0) or math.min(3.5, decel / 120.0)
-            heatRate += isFront and 0.11 or 0.04
+        if braking and speed > 35.0 then
+            local brakeLoad = math.min(20.0, 4.0 + (speed / 170.0) * 9.0 + math.min(7.0, decel / 80.0))
+            targetTemp += isFront and brakeLoad or (brakeLoad * 0.36)
+            directHeat += isFront and math.min(4.8, decel / 85.0) or math.min(1.8, decel / 180.0)
+            heatRate += isFront and 0.055 or 0.025
+        end
+
+        if throttle > 0.0 and speed > 8.0 and isDriven then
+            directHeat += math.min(4.2, (speed / 140.0) * 2.6 + 0.8) * axleDriveShare
         end
 
         if handbrake and speed > 25.0 then
-            targetTemp += isRear and 24.0 or 7.0
-            directHeat += isRear and 20.0 or 4.0
-            heatRate += isRear and 0.18 or 0.05
+            targetTemp += isRear and 18.0 or 5.0
+            directHeat += isRear and 14.0 or 2.5
+            heatRate += isRear and 0.12 or 0.035
         end
 
         if burnout then
-            -- Burnout não pode só estabilizar: ele injeta calor direto e sobe até faixa crítica.
-            targetTemp += isRear and 80.0 or 20.0
-            directHeat += isRear and 48.0 or 10.0
-            heatRate += isRear and 0.28 or 0.08
+            -- Burnout/slip injeta calor no eixo motriz. RWD = traseira, FWD = dianteira, AWD = os 4.
+            local burnoutLoad = isDriven and drivenLoad or 0.25
+            targetTemp += 78.0 * burnoutLoad
+            directHeat += 44.0 * burnoutLoad
+            heatRate += 0.24 * burnoutLoad
         end
 
         if airborne then
@@ -975,7 +988,7 @@ local function updateTireSystem(vehicle, delta)
         if tire.temp > 110.0 then wearGain += (tire.temp - 110.0) * 0.008 end
         if speed > 85.0 and steering > 20.0 and isOuter then wearGain += 0.045 end
         if braking and decel > 110.0 and isFront then wearGain += 0.040 end
-        if burnout and isRear then wearGain += 0.32 end
+        if burnout and isDriven then wearGain += 0.28 * drivenLoad end
         if handbrake and speed > 45.0 and isRear then wearGain += 0.075 end
         tire.wear = math.max(0.0, math.min(100.0, tire.wear + (wearGain * delta)))
         tire.grip = getTireGripFactor(tire.temp, tire.wear)
