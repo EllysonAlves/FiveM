@@ -328,14 +328,6 @@
                             <div class="ref-rpm-caption">RPM x1000</div>
                             <div class="ref-speed">{{ speed }}</div>
                             <div class="ref-unit">MPH</div>
-                            <div class="ref-thermal-icons" title="Pneus e freio">
-                                <div class="ref-tires">
-                                    <div v-for="key in tireOrder" :key="key" class="ref-tire" :class="tireState(tires[key])"></div>
-                                </div>
-                                <div class="ref-brake" :class="brakeState">
-                                    <span>●</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

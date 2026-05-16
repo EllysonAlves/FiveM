@@ -53,6 +53,10 @@ local nitroExhaustBones = {
     'exhaust_5', 'exhaust_6', 'exhaust_7', 'exhaust_8',
 }
 
+local function isAlvesRacingCoreActive()
+    return GetResourceState('alves-racing-core') == 'started' or GetResourceState('alves-racing-core') == 'starting'
+end
+
 local function getNitroModeConfig(mode)
     return nitroConfig.modes[mode] or nitroConfig.modes.balanced
 end
@@ -597,6 +601,7 @@ lib.addKeybind({
     defaultKey = 'N',
     defaultMapper = 'keyboard',
     onPressed = function()
+        if isAlvesRacingCoreActive() then return end
         nitroMode = nextNitroMode(nitroMode)
         local modeConfig = getNitroModeConfig(nitroMode)
         exports.qbx_core:Notify(('Nitro: %s'):format(modeConfig.label), 'inform')
@@ -616,6 +621,7 @@ lib.addKeybind({
     defaultKey = 'LSHIFT',
     defaultMapper = 'keyboard',
     onPressed = function()
+        if isAlvesRacingCoreActive() then return end
         nitroKeyHeld = true
     end,
     onReleased = function()
@@ -632,6 +638,7 @@ lib.addKeybind({
 })
 
 RegisterCommand('nitrocheio', function()
+    if isAlvesRacingCoreActive() then return end
     nitroLevel = 100
     exports.qbx_core:Notify('Nitro recarregado.', 'success')
 end, false)
@@ -640,6 +647,12 @@ CreateThread(function()
     local lastTick = GetGameTimer()
 
     while true do
+        if isAlvesRacingCoreActive() then
+            if nitroActive == 1 then setNitroActive(cache.vehicle, false) end
+            nitroKeyHeld = false
+            lastTick = GetGameTimer()
+            Wait(1000)
+        else
         Wait(nitroKeyHeld and 0 or 50)
         local now = GetGameTimer()
         local delta = (now - lastTick) / 1000.0
@@ -671,6 +684,7 @@ CreateThread(function()
             if not nitroKeyHeld and (now - nitroLastUsed) >= nitroConfig.rechargeDelayMs then
                 nitroLevel = math.min(100.0, nitroLevel + (nitroConfig.rechargePerSecond * delta))
             end
+        end
         end
     end
 end)
@@ -926,6 +940,11 @@ local function getWheelSlipKmh(vehicle, wheelIndex, vehicleSpeedKmh)
 end
 
 local function updateTireSystem(vehicle, delta)
+    if isAlvesRacingCoreActive() then
+        resetTireHandling(vehicle)
+        return
+    end
+
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) or GetPedInVehicleSeat(vehicle, -1) ~= cache.ped then
         resetTireHandling(vehicle)
         lastTireSpeedKmh = 0.0
@@ -974,7 +993,7 @@ local function updateTireSystem(vehicle, delta)
         local drivenLoad = isDriven and (0.55 + (axleDriveShare * 0.90)) or 0.22
         local wheelSlipKmh = getWheelSlipKmh(vehicle, tireWheelIndex[key], speed)
         local driftSlipKmh = math.max(0.0, lateralSlipKmh - 7.0) * (isOuter and 1.10 or 0.78)
-        if handbrake and isRear then driftSlipKmh *= 1.55 end
+        if handbrake and isRear then driftSlipKmh = driftSlipKmh * 1.55 end
         local slipKmh = math.max(wheelSlipKmh, driftSlipKmh)
 
         -- Parado/frio ~30°C. Rodar normal deve aquecer devagar; ideal vem depois de uso consistente.
@@ -989,50 +1008,50 @@ local function updateTireSystem(vehicle, delta)
 
         if speed > 55.0 and steering > 10.0 then
             local cornerLoad = math.min(16.0, ((speed - 45.0) / 135.0) * (steering / 36.0) * 13.0)
-            if isFront then cornerLoad *= 1.02 end
-            if isOuter then cornerLoad *= 1.30 else cornerLoad *= 0.56 end
-            targetTemp += cornerLoad
-            heatRate += 0.018
+            if isFront then cornerLoad = cornerLoad * 1.02 end
+            if isOuter then cornerLoad = cornerLoad * 1.30 else cornerLoad = cornerLoad * 0.56 end
+            targetTemp = targetTemp + cornerLoad
+            heatRate = heatRate + 0.018
         end
 
         if braking and speed > 40.0 then
             local brakeLoad = math.min(13.0, 3.0 + (speed / 180.0) * 6.0 + math.min(4.0, decel / 110.0))
-            targetTemp += isFront and brakeLoad or (brakeLoad * 0.32)
-            directHeat += isFront and math.min(1.8, decel / 190.0) or math.min(0.7, decel / 320.0)
-            heatRate += isFront and 0.025 or 0.012
+            targetTemp = targetTemp + (isFront and brakeLoad or (brakeLoad * 0.32))
+            directHeat = directHeat + (isFront and math.min(1.8, decel / 190.0) or math.min(0.7, decel / 320.0))
+            heatRate = heatRate + (isFront and 0.025 or 0.012)
         end
 
         if slipKmh > 8.0 then
             local slipHeat = math.min(30.0, (slipKmh - 8.0) * 0.95)
-            if isDriven then slipHeat *= drivenLoad end
-            if isRear and handbrake then slipHeat *= 1.35 end
-            targetTemp += slipHeat
-            directHeat += math.min(18.0, slipHeat * 0.45)
-            heatRate += 0.035
+            if isDriven then slipHeat = slipHeat * drivenLoad end
+            if isRear and handbrake then slipHeat = slipHeat * 1.35 end
+            targetTemp = targetTemp + slipHeat
+            directHeat = directHeat + math.min(18.0, slipHeat * 0.45)
+            heatRate = heatRate + 0.035
         end
 
         if throttle > 0.0 and speed > 8.0 and isDriven then
-            directHeat += math.min(0.55, (speed / 180.0) * 0.34 + 0.12) * axleDriveShare
+            directHeat = directHeat + (math.min(0.55, (speed / 180.0) * 0.34 + 0.12) * axleDriveShare)
         end
 
         if handbrake and speed > 25.0 then
-            targetTemp += isRear and 14.0 or 4.0
-            directHeat += isRear and 8.0 or 1.5
-            heatRate += isRear and 0.08 or 0.025
+            targetTemp = targetTemp + (isRear and 14.0 or 4.0)
+            directHeat = directHeat + (isRear and 8.0 or 1.5)
+            heatRate = heatRate + (isRear and 0.08 or 0.025)
         end
 
         if burnout and slipKmh > 12.0 then
             -- Burnout real precisa de slip de roda; evita falso aquecimento com W+S sem pneu girando.
             local burnoutLoad = isDriven and drivenLoad or 0.25
-            targetTemp += 72.0 * burnoutLoad
-            directHeat += 34.0 * burnoutLoad
-            heatRate += 0.18 * burnoutLoad
+            targetTemp = targetTemp + (72.0 * burnoutLoad)
+            directHeat = directHeat + (34.0 * burnoutLoad)
+            heatRate = heatRate + (0.18 * burnoutLoad)
         end
 
         if airborne then
             targetTemp = math.max(28.0, targetTemp - 30.0)
-            directHeat *= 0.20
-            heatRate *= 0.35
+            directHeat = directHeat * 0.20
+            heatRate = heatRate * 0.35
         end
 
         local coolRate = tire.temp > 110.0 and 0.20 or 0.035
@@ -1041,17 +1060,17 @@ local function updateTireSystem(vehicle, delta)
         tire.temp = math.max(20.0, math.min(165.0, tire.temp))
 
         local wearGain = 0.0
-        if tire.temp > 110.0 then wearGain += (tire.temp - 110.0) * 0.008 end
-        if speed > 85.0 and steering > 20.0 and isOuter then wearGain += 0.045 end
-        if braking and decel > 110.0 and isFront then wearGain += 0.040 end
-        if burnout and isDriven and slipKmh > 12.0 then wearGain += 0.28 * drivenLoad end
-        if handbrake and speed > 45.0 and isRear then wearGain += 0.075 end
+        if tire.temp > 110.0 then wearGain = wearGain + ((tire.temp - 110.0) * 0.008) end
+        if speed > 85.0 and steering > 20.0 and isOuter then wearGain = wearGain + 0.045 end
+        if braking and decel > 110.0 and isFront then wearGain = wearGain + 0.040 end
+        if burnout and isDriven and slipKmh > 12.0 then wearGain = wearGain + (0.28 * drivenLoad) end
+        if handbrake and speed > 45.0 and isRear then wearGain = wearGain + 0.075 end
         tire.wear = math.max(0.0, math.min(100.0, tire.wear + (wearGain * delta)))
         tire.grip = getTireGripFactor(tire.temp, tire.wear)
 
-        tempSum += tire.temp
-        wearSum += tire.wear
-        gripSum += tire.grip
+        tempSum = tempSum + tire.temp
+        wearSum = wearSum + tire.wear
+        gripSum = gripSum + tire.grip
     end
 
     tireTemp = tempSum / 4.0

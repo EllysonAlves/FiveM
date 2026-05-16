@@ -1032,18 +1032,6 @@ const vehHud = {
       nitro: 100,
       nitroActive: false,
       nitroMode: 'balanced',
-      tireTemp: 30,
-      tireGrip: 86,
-      tireWear: 0,
-      brakeTemp: 30,
-      brakeFactor: 78,
-      tireOrder: ['lf', 'rf', 'lr', 'rr'],
-      tires: {
-        lf: { label: 'DE', temp: 30, grip: 86, wear: 0 },
-        rf: { label: 'DD', temp: 30, grip: 86, wear: 0 },
-        lr: { label: 'TE', temp: 30, grip: 86, wear: 0 },
-        rr: { label: 'TD', temp: 30, grip: 86, wear: 0 },
-      },
       showSquareB: 0,
       show: false,
       showAltitude: true,
@@ -1104,14 +1092,6 @@ const vehHud = {
     nitroModeLabel() {
       return this.nitroPalette.label;
     },
-    brakeState() {
-      const temp = Number(this.brakeTemp || 30);
-      if (temp >= 700) return 'critical';
-      if (temp >= 520) return 'overheated';
-      if (temp >= 180) return 'ideal';
-      if (temp >= 80) return 'warming';
-      return 'cold';
-    },
     beltText() {
       return this.seatbelt === 1 ? 'ON' : 'OFF';
     },
@@ -1120,25 +1100,6 @@ const vehHud = {
     },
   },
   methods: {
-    tireState(tire) {
-      const temp = Number(tire?.temp ?? 30);
-      const wear = Number(tire?.wear ?? 0);
-      if (wear >= 72 || temp >= 130) return 'critical';
-      if (temp >= 110) return 'overheated';
-      if (temp >= 95) return 'hot';
-      if (temp >= 70) return 'ideal';
-      if (temp >= 50) return 'warming';
-      return 'cold';
-    },
-    normalizeTire(key, tire) {
-      const current = this.tires[key] || { label: key.toUpperCase(), temp: 30, grip: 86, wear: 0 };
-      return {
-        label: tire?.label || current.label,
-        temp: Math.max(0, Math.min(170, Math.round(tire?.temp ?? current.temp))),
-        grip: Math.max(0, Math.min(120, Math.round(tire?.grip ?? current.grip))),
-        wear: Math.max(0, Math.min(100, Math.round(tire?.wear ?? current.wear))),
-      };
-    },
     vehicleHud(data) {
       this.show = data.show;
       this.speed = data.speed;
@@ -1148,19 +1109,6 @@ const vehHud = {
       this.nitro = Math.max(0, Math.min(100, Math.round(data.nitro ?? this.nitro ?? 100)));
       this.nitroActive = data.nitroActive === 1 || data.nitroActive === true;
       this.nitroMode = data.nitroMode || this.nitroMode || 'balanced';
-      this.tireTemp = Math.max(0, Math.min(170, Math.round(data.tireTemp ?? this.tireTemp ?? 30)));
-      this.tireGrip = Math.max(0, Math.min(120, Math.round(data.tireGrip ?? this.tireGrip ?? 86)));
-      this.tireWear = Math.max(0, Math.min(100, Math.round(data.tireWear ?? this.tireWear ?? 0)));
-      this.brakeTemp = Math.max(0, Math.min(900, Math.round(data.brakeTemp ?? this.brakeTemp ?? 30)));
-      this.brakeFactor = Math.max(0, Math.min(130, Math.round(data.brakeFactor ?? this.brakeFactor ?? 78)));
-      if (data.tires) {
-        this.tires = {
-          lf: this.normalizeTire('lf', data.tires.lf),
-          rf: this.normalizeTire('rf', data.tires.rf),
-          lr: this.normalizeTire('lr', data.tires.lr),
-          rr: this.normalizeTire('rr', data.tires.rr),
-        };
-      }
       this.showSeatbelt = data.showSeatbelt;
       this.showAltitude = data.showAltitude;
       this.showSquareB = data.showSquareB;

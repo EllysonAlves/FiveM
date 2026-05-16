@@ -23,7 +23,7 @@ resources/[alves]/alves-racingapp
 - Phase/ghost durante corrida para evitar colisão entre competidores.
 - Veículo da corrida protegido, com combustível em 100 e sem degradação **somente enquanto a corrida está ativa**.
 
-O `alves-racingapp` é independente: fora da corrida ele não altera ped, mapa, NPCs, HUD global, `/car`, vehiclekeys, combustível global ou configuração do servidor.
+O `alves-racingapp` é independente: fora da corrida ele não altera ped, mapa, NPCs, HUD global, `/car`, vehiclekeys, combustível global, nitro, temperatura de pneu/freio, speedometer global ou configuração do servidor.
 
 ## O que NÃO vai no pacote
 
@@ -36,9 +36,13 @@ Essas coisas são configuração do servidor, não do script de corrida:
 - Fuel global forçado.
 - Anti-eject/seatbelt global.
 - Comandos globais de tuning tipo `/tuning`, `/bennys`, `/custom`.
+- Nitro global.
+- Temperatura/desgaste/grip de pneus.
+- Temperatura/força de freio.
+- Speedometer/HUD global do servidor.
 - Qualquer alteração de HUD global do servidor.
 
-Se o servidor quiser esses comportamentos, ele deve configurar isso nos próprios resources do servidor, separado do `alves-racingapp`.
+Se o servidor quiser esses comportamentos, ele deve configurar isso nos próprios resources do servidor, separado do `alves-racingapp`. No servidor Alves Racing, isso fica no `alves-racing-core`.
 
 ## Requisitos no servidor do seu colega
 
