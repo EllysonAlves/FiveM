@@ -2,17 +2,32 @@
 body{ margin:0; overflow:hidden; background:transparent; font-family:Arial, sans-serif; }
 .hidden{ display:none !important; }
 .thermal-hud{
-  position:absolute;
-  right:46px;
-  bottom:48px;
+  position:fixed;
+  right:104px;
+  bottom:72px;
+  z-index:80;
   display:flex;
   align-items:center;
-  gap:8px;
-  padding:7px 9px;
-  border-radius:14px;
-  background:rgba(5,7,13,.42);
-  border:1px solid rgba(255,255,255,.08);
-  box-shadow:0 10px 26px rgba(0,0,0,.26);
+  justify-content:center;
+  gap:10px;
+  padding:0;
+  width:92px;
+  height:32px;
+  border-radius:0;
+  background:transparent;
+  border:0;
+  box-shadow:none;
+  pointer-events:none;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.55));
+}
+
+@media(max-width:1600px){
+  .thermal-hud{
+    right:82px;
+    bottom:61px;
+    transform:scale(.88);
+    transform-origin:right bottom;
+  }
 }
 .thermal-tires{
   width:34px;
@@ -24,25 +39,25 @@ body{ margin:0; overflow:hidden; background:transparent; font-family:Arial, sans
 .thermal-tire{
   width:13px;
   height:13px;
-  border-radius:4px;
-  background:rgba(8,8,13,.66);
-  border:1px solid rgba(255,255,255,.14);
-  box-shadow:0 0 9px rgba(0,0,0,.34);
+  border-radius:5px;
+  background:rgba(8,8,13,.32);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 0 9px rgba(0,0,0,.28);
 }
 .thermal-brake{
-  width:22px;
-  height:22px;
+  width:25px;
+  height:25px;
   display:flex;
   align-items:center;
   justify-content:center;
   border-radius:50%;
-  background:rgba(8,8,13,.70);
-  border:1px solid rgba(255,255,255,.14);
-  box-shadow:0 0 10px rgba(0,0,0,.34);
+  background:rgba(8,8,13,.20);
+  border:1px solid rgba(255,255,255,.15);
+  box-shadow:0 0 10px rgba(0,0,0,.28);
 }
 .thermal-brake span{
-  width:10px;
-  height:10px;
+  width:11px;
+  height:11px;
   display:block;
   border-radius:50%;
   background:#3b82f6;

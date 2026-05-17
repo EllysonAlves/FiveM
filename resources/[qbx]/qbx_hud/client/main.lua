@@ -57,6 +57,19 @@ local function isAlvesRacingCoreActive()
     return GetResourceState('alves-racing-core') == 'started' or GetResourceState('alves-racing-core') == 'starting'
 end
 
+local function getDisplayedNitro()
+    if isAlvesRacingCoreActive() then
+        local coreNitro = LocalPlayer.state.alvesNitro
+        if type(coreNitro) == 'table' then
+            return math.floor((coreNitro.level or 100) + 0.5), (coreNitro.active and 1 or 0), coreNitro.mode or 'balanced'
+        end
+
+        return 100, 0, nitroMode
+    end
+
+    return math.floor(nitroLevel + 0.5), nitroActive, nitroMode
+end
+
 local function getNitroModeConfig(mode)
     return nitroConfig.modes[mode] or nitroConfig.modes.balanced
 end
@@ -550,6 +563,10 @@ local function startNitroFlames(vehicle, mode)
             UseParticleFxAsset(asset)
             local effect = StartParticleFxLoopedOnEntityBone(effectName, vehicle, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, boneIndex, 1.15, false, false, false)
             if effect and effect ~= 0 then
+                local modeConfig = getNitroModeConfig(mode)
+                if modeConfig.color then
+                    SetParticleFxLoopedColour(effect, modeConfig.color.r or 0.05, modeConfig.color.g or 0.45, modeConfig.color.b or 1.0, false)
+                end
                 SetParticleFxLoopedAlpha(effect, 0.95)
                 effects[#effects + 1] = effect
             end
@@ -1169,6 +1186,7 @@ CreateThread(function()
                     DisplayRadar(true)
                 end
                 wasInVehicle = true
+                local displayNitroLevel, displayNitroActive, displayNitroMode = getDisplayedNitro()
                 updatePlayerHud({
                     show,
                     sharedConfig.menu.isDynamicHealthChecked,
@@ -1191,9 +1209,9 @@ CreateThread(function()
                     armed,
                     oxygen,
                     GetPedParachuteState(cache.ped),
-                    nos,
+                    displayNitroLevel,
                     cruiseOn,
-                    nitroActive,
+                    displayNitroActive,
                     LocalPlayer.state?.harness,
                     hp,
                     math.ceil(GetEntitySpeed(cache.vehicle) * speedMultiplier),
@@ -1214,9 +1232,9 @@ CreateThread(function()
                     showSquareB,
                     showCircleB,
                     GetVehicleCurrentRpm(cache.vehicle),
-                    math.floor(nitroLevel + 0.5),
-                    nitroActive,
-                    nitroMode,
+                    displayNitroLevel,
+                    displayNitroActive,
+                    displayNitroMode,
                     math.floor(tireTemp + 0.5),
                     math.floor(tireGrip * 100 + 0.5),
                     math.floor(tireWear + 0.5),
@@ -1234,14 +1252,15 @@ CreateThread(function()
             else
                 if wasInVehicle then
                     wasInVehicle = false
+                    local displayNitroLevel, _, displayNitroMode = getDisplayedNitro()
                     SendNUIMessage({
                         action = 'car',
                         show = false,
                         seatbelt = false,
                         cruise = false,
-                        nitro = math.floor(nitroLevel + 0.5),
+                        nitro = displayNitroLevel,
                         nitroActive = 0,
-                        nitroMode = nitroMode,
+                        nitroMode = displayNitroMode,
                         tireTemp = math.floor(tireTemp + 0.5),
                         tireGrip = math.floor(tireGrip * 100 + 0.5),
                         tireWear = math.floor(tireWear + 0.5),

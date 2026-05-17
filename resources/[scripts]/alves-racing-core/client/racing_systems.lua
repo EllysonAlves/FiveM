@@ -6,6 +6,7 @@ local nitroKeyHeld = false
 local nitroLastUsed = 0
 local nitroSoundActive = false
 local nitroFlameEffects = {}
+local lastNitroTelemetry = { level = -1, active = nil, mode = nil }
 
 local tireTemp = 30.0
 local tireWear = 0.0
@@ -46,6 +47,19 @@ end
 
 local function notify(message, notifyType)
     if lib and lib.notify then lib.notify({ type = notifyType or 'inform', description = message }) end
+end
+
+local function publishNitroTelemetry(force)
+    local level = math.floor(nitroLevel + 0.5)
+    local active = nitroActive == true
+    if not force and lastNitroTelemetry.level == level and lastNitroTelemetry.active == active and lastNitroTelemetry.mode == nitroMode then return end
+
+    lastNitroTelemetry = { level = level, active = active, mode = nitroMode }
+    LocalPlayer.state:set('alvesNitro', {
+        level = level,
+        active = active,
+        mode = nitroMode,
+    }, false)
 end
 
 local function canUseNitro(vehicle)
@@ -127,6 +141,7 @@ if Config.EnableNitroSystem then
         onPressed = function()
             nitroMode = nextNitroMode(nitroMode)
             notify(('Nitro: %s'):format(getNitroModeConfig(nitroMode).label or nitroMode), 'inform')
+            publishNitroTelemetry(true)
             local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
             if nitroActive and vehicle ~= 0 then
                 stopNitroFlames(vehicle)
@@ -155,10 +170,12 @@ if Config.EnableNitroSystem then
 
     RegisterCommand('nitrocheio', function()
         nitroLevel = 100.0
+        publishNitroTelemetry(true)
         notify('Nitro recarregado.', 'success')
     end, false)
 
     CreateThread(function()
+        publishNitroTelemetry(true)
         local lastTick = GetGameTimer()
         while true do
             Wait(nitroKeyHeld and 0 or 50)
@@ -181,6 +198,7 @@ if Config.EnableNitroSystem then
                     nitroLevel = math.min(100.0, nitroLevel + ((nitroConfig.rechargePerSecond or 10.0) * delta))
                 end
             end
+            publishNitroTelemetry(false)
         end
     end)
 
@@ -388,5 +406,6 @@ AddEventHandler('onResourceStop', function(resourceName)
     resetTireHandling(vehicle)
     stopAllNitroFlames()
     setNitroSound(false)
+    LocalPlayer.state:set('alvesNitro', nil, false)
     SendNUIMessage({ action = 'thermal', show = false })
 end)
