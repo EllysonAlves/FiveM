@@ -431,12 +431,48 @@ function getUpcomingCheckpoints()
 end
 
 local VisualModTypes = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 48 }
+local getVehicleModelName
 
 local function getRaceVehicleModels()
     return lib.callback.await('alves-racingapp:getQuickRaceVehicles', false) or {}
 end
 
-local function getVehicleModelName(vehicle)
+local function getRaceVehicleClass(modelName, fallbackClass)
+    if fallbackClass and fallbackClass ~= '' then return tostring(fallbackClass):upper() end
+    modelName = modelName and tostring(modelName):lower() or nil
+    if not modelName then return 'S' end
+    for className, vehicles in pairs(Config.RaceVehiclesByClass or {}) do
+        for _, vehicle in ipairs(vehicles or {}) do
+            if tostring(vehicle):lower() == modelName then return tostring(className):upper() end
+        end
+    end
+    return 'S'
+end
+
+local function getVehicleDrivetrain(vehicle)
+    if not DoesEntityExist(vehicle) then return 'RWD' end
+    local driveBiasFront = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fDriveBiasFront') or 0.0
+    if driveBiasFront <= 0.22 then return 'RWD' end
+    if driveBiasFront >= 0.78 then return 'FWD' end
+    return 'AWD'
+end
+
+local function applyBalancedRaceHandling(vehicle, raceClass, modelName)
+    if not DoesEntityExist(vehicle) then return end
+    local drivetrain = getVehicleDrivetrain(vehicle)
+    local className = getRaceVehicleClass(modelName or getVehicleModelName(vehicle), raceClass)
+    local classBalance = Config.VehicleHandlingBalance and Config.VehicleHandlingBalance[className]
+    local balance = classBalance and (classBalance[drivetrain] or classBalance.RWD) or nil
+    if not balance then return end
+
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fInitialDriveMaxFlatVel', balance.maxFlatVel)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fInitialDriveForce', balance.initialDriveForce)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fSteeringLock', balance.steeringLock)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMax', balance.tractionMax)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMin', balance.tractionMin)
+end
+
+function getVehicleModelName(vehicle)
     if not DoesEntityExist(vehicle) then return nil end
     local modelHash = GetEntityModel(vehicle)
     for _, modelName in ipairs(getRaceVehicleModels()) do
@@ -620,7 +656,7 @@ function disableRaceVehiclePhase()
     phasedVehicle = 0
 end
 
-function applyRaceVehicleRules(vehicle)
+function applyRaceVehicleRules(vehicle, raceClass, applyHandling, modelName)
     if not DoesEntityExist(vehicle) then return end
     SetVehicleModKit(vehicle, 0)
     for _, modType in ipairs({ 11, 12, 13, 15, 16 }) do
@@ -630,6 +666,10 @@ function applyRaceVehicleRules(vehicle)
         end
     end
     ToggleVehicleMod(vehicle, 18, true)
+
+    if applyHandling then
+        applyBalancedRaceHandling(vehicle, raceClass, modelName)
+    end
 
     SetEntityInvincible(vehicle, true)
     SetVehicleCanBeVisiblyDamaged(vehicle, false)
@@ -770,7 +810,7 @@ function startRaceSession(result)
     SetVehicleEngineOn(veh, true, true, false)
     SetModelAsNoLongerNeeded(model)
 
-    applyRaceVehicleRules(veh)
+    applyRaceVehicleRules(veh, result.raceClass, true, requestedModel)
     applySavedVisualPreset(veh, requestedModel)
     if Config.RaceVehiclePhase then
         phasedVehicle = veh
