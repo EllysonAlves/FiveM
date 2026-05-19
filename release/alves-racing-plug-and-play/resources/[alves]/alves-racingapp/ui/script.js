@@ -679,7 +679,7 @@ function displayGarage(data = {}) {
 
     const html = vehicles.map((vehicle, index) => {
         const model = typeof vehicle === 'string' ? vehicle : vehicle.modelName;
-        const vehicleClass = typeof vehicle === 'object' && vehicle.class ? vehicle.class : (['arbitergt','cazadortrc','clubhryc','dawn','growlerc','gstaspc3','gstc24','gstpmp7s1c','gstyanguard1b','hb450s','hb4503k','remusx','s790','schlag','str','strcoupe','sunrise1','tailgaters','vulture'].includes(String(model || '').toLowerCase()) ? 'A' : 'S');
+        const vehicleClass = typeof vehicle === 'object' && vehicle.class ? vehicle.class : (['arbitergtc','cazadortcr','clubrhyc','dawn','growlerc','gstasp3','gstcs24','gstpmp7s1c','gstvanguard1b','hb450s','hb4503k','remusx','s790','schlag','str','strcoupe','sunrise1','tailgatersr','vulture'].includes(String(model || '').toLowerCase()) ? 'A' : 'S');
         const name = (typeof vehicle === 'object' && vehicle.name) ? vehicle.name : String(model || '').toUpperCase();
         const safeModel = escapeHtml(model);
         const safeName = escapeHtml(name);

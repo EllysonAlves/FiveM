@@ -41,44 +41,28 @@ Config.RankedVehicleClassWeightsByTier = {
 }
 
 -- Veículos disponíveis no lobby de corrida.
--- Use o spawn name do veículo. Pode ser vanilla ou addon; o único requisito é
--- o modelo estar carregável no servidor do jogador antes da corrida iniciar.
--- Ex.: se o servidor tem carros em [vipcars], basta garantir `ensure [vipcars]`
--- antes do `ensure alves-racingapp` e colocar os spawn names aqui.
+-- Apenas modelos JFx/custom: não usar carros padrão do GTA na frota do Alves Racing.
+-- Use o spawn name do veículo e garanta que o pack JFx esteja em `ensure [JFx]`
+-- antes do `ensure alves-racingapp`.
 Config.RaceVehicles = {
-    'sultanrs',
-    'elegy',
-    'jester3',
-    'comet5',
-    'banshee2',
-    'ninef',
-    'massacro',
-    'feltzer2',
-    'coquette',
-    'kuruma',
+    'arbitergtn', 'benito2020', 'carrion', 'carrionmech', 'cazador', 'clubr',
+    'elegyrh8c', 'elegyxa19', 'elegyxa19ven', 'flashgrs', 'gstban1k2', 'gstbanac1',
+    'gstbanac1b', 'gstbanac1c', 'gstbisc1', 'gstbisc1b', 'gstbisc1c', 'gstcdy2',
+    'gstcdy2b', 'gstcdy2c', 'gstcdy2d', 'gstevmr1', 'gstgoose1', 'gstgoose1b',
+    'gstingnt1', 'gstingnt1b', 'gstpaladingt', 'gstpenf1', 'gstpmp7s1', 'gstpmp7s1b',
+    'gstpmp7s1d', 'gstraid3', 'gstrh5s2', 'gstsadlt5', 'gstsettimo1', 'gstslt1',
+    'gstsrs1', 'gsttorle1', 'gstturo1', 'gstxsajest3reptile', 'gstyc1', 'hb450c',
+    'hb450d', 'hb450p', 'hellfirec', 'komtour', 'nwjester', 'rathaulc',
+    'rattowc', 'rattrailer', 'rattruckc', 'shenron', 'shinobid', 'sr8',
+    'srspback', 'strwag', 'taurion', 'trager', 'tragmech', 'xlsstr',
 }
 
 Config.RaceVehiclesByClass = {
     S = Config.RaceVehicles,
     A = {
-        'arbitergt',
-        'cazadortrc',
-        'clubhryc',
-        'dawn',
-        'growlerc',
-        'gstaspc3',
-        'gstc24',
-        'gstpmp7s1c',
-        'gstyanguard1b',
-        'hb450s',
-        'hb4503k',
-        'remusx',
-        's790',
-        'schlag',
-        'str',
-        'strcoupe',
-        'sunrise1',
-        'tailgaters',
+        'arbitergtc', 'cazadortcr', 'clubrhyc', 'dawn', 'growlerc', 'gstasp3',
+        'gstcs24', 'gstpmp7s1c', 'gstvanguard1b', 'hb450s', 'hb4503k', 'remusx',
+        's790', 'schlag', 'str', 'strcoupe', 'sunrise1', 'tailgatersr',
         'vulture',
     }
 }
