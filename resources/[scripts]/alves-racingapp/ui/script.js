@@ -79,6 +79,8 @@ window.addEventListener('message', function(event) {
         case 'showScoreboard': displayScoreboard(data.data || {}); break;
         case 'showRanking': displayRanking(data.data || {}); break;
         case 'showProfile': displayProfile(data.data || {}); break;
+        case 'settingsSaved': settingsFeedback('Nome atualizado.', true, data.data?.racerName); break;
+        case 'settingsSaveFailed': settingsFeedback(data.data?.message || 'Falha ao salvar.', false); break;
         case 'showGarage': displayGarage(data.data || {}); break;
         case 'garageSpawnOk': garageFeedback(data.data?.name || 'Veículo', true); break;
         case 'garageSpawnFail': garageFeedback(data.data?.name || 'Veículo', false, data.data?.message); break;
@@ -311,7 +313,8 @@ function displayLobby(data) {
     }
 
     const typeText = currentLobby.raceType === 'ranked' ? 'RANQUEADA' : 'CASUAL';
-    setText('#lobby-title', `LOBBY ${typeText}`);
+    const classText = currentLobby.raceClass ? ` • CLASSE ${currentLobby.raceClass}` : '';
+    setText('#lobby-title', `LOBBY ${typeText}${classText}`);
     setText('#lobby-players-count', currentLobby.playerCount || 0);
 
     const renderTimer = () => {
@@ -351,7 +354,7 @@ function displayLobby(data) {
             <button class="lobby-option car-option" onclick="voteCar('${String(vehicle).replace(/'/g, "\\'")}')">
                 <span class="option-index">CARRO ${index + 1}</span>
                 <strong>${vehicle}</strong>
-                <small>Escolha individual</small>
+                <small>${currentLobby.raceClass ? `Classe ${currentLobby.raceClass}` : 'Escolha individual'}</small>
                 <span class="option-votes">${votes} escolhido${votes === 1 ? '' : 's'}</span>
             </button>`;
     }).join('');
@@ -379,6 +382,34 @@ function showRanking() {
 function showProfile() {
     setActiveMenu('PERFIL');
     nuiPost('showProfile');
+}
+
+function showSettings() {
+    setActiveMenu('CONFIGURAÇÕES');
+    $$('.modal').forEach(m => m.classList.add('hidden'));
+    const input = $('#settings-racer-name');
+    if (input) input.value = $('#player-name')?.textContent || '';
+    settingsFeedback('3 a 24 caracteres. Letras, números, espaço, -, _, . e colchetes.', true);
+    removeClass('#modal-settings', 'hidden');
+}
+
+function saveSettings() {
+    const racerName = $('#settings-racer-name')?.value || '';
+    settingsFeedback('Salvando...', true);
+    nuiPost('saveSettings', { racerName });
+}
+
+function settingsFeedback(message, ok = true, racerName) {
+    const feedback = $('#settings-feedback');
+    if (feedback) {
+        feedback.textContent = message;
+        feedback.className = ok ? 'settings-feedback ok' : 'settings-feedback error';
+    }
+    if (racerName) {
+        setText('#player-name', racerName);
+        const input = $('#settings-racer-name');
+        if (input) input.value = racerName;
+    }
 }
 
 function showRaceHUD() {
@@ -491,21 +522,30 @@ function displayRanking(data) {
     $$('.modal').forEach(m => m.classList.add('hidden'));
     let html = '';
     if (Array.isArray(data?.ranking) && data.ranking.length) {
+        let lastTier = null;
         data.ranking.forEach((entry, index) => {
             const winRate = entry.races > 0 ? ((entry.wins / entry.races) * 100).toFixed(1) : '0.0';
             const tierColor = entry.tierColor || '#a855f7';
             const tierName = entry.elo_tier || 'Street';
             const eloPoints = entry.elo_points || 0;
+            if (tierName !== lastTier) {
+                lastTier = tierName;
+                html += `<div class="ranking-tier-section" style="--tier-color:${tierColor};"><span>${tierName}</span><small>ranking por tier</small></div>`;
+            }
             html += `
                 <div class="ranking-entry-card" style="--tier-color:${tierColor};">
                     <div class="ranking-position">#${index + 1}</div>
-                    <div class="ranking-tier-badge">${tierName}</div>
+                    <div class="ranking-entry-top">
+                        <div class="ranking-tier-badge">${tierName}</div>
+                        <div class="ranking-points" style="color:${tierColor};">${eloPoints} PTS</div>
+                    </div>
                     <div class="ranking-info">
-                        <div class="ranking-name">${entry.racername || 'Desconhecido'}</div>
-                        <div class="ranking-stat"><span class="ranking-stat-label">ELO</span><span class="ranking-stat-value" style="color:${tierColor};">${eloPoints} PTS</span></div>
-                        <div class="ranking-stat"><span class="ranking-stat-label">Corridas</span><span class="ranking-stat-value">${entry.races || 0}</span></div>
-                        <div class="ranking-stat"><span class="ranking-stat-label">Vitórias</span><span class="ranking-stat-value">${entry.wins || 0}</span></div>
-                        <div class="ranking-stat"><span class="ranking-stat-label">Taxa de Vitória</span><span class="ranking-stat-value">${winRate}%</span></div>
+                        <div class="ranking-name">${escapeHtml(entry.racername || 'Desconhecido')}</div>
+                        <div class="ranking-compact-stats">
+                            <span>${entry.races || 0} corridas</span>
+                            <span>${entry.wins || 0} vitórias</span>
+                            <span>${winRate}% WR</span>
+                        </div>
                     </div>
                 </div>`;
         });
@@ -525,6 +565,7 @@ function displayProfile(data) {
     const tierProgress = data?.tierMaxPoints > 0 ? Math.min(100, ((data.pointsInTier / data.tierMaxPoints) * 100)).toFixed(1) : 0;
     const tierColor = data?.tierColor || '#a855f7';
     const racerName = data?.racername || 'Piloto';
+    const safeRacerName = escapeHtml(racerName);
     const initials = racerName.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'AR';
 
     setHtml('#profile-stats', `
@@ -532,7 +573,7 @@ function displayProfile(data) {
             <div class="profile-avatar">${initials}</div>
             <div class="profile-hero-info">
                 <span class="profile-kicker">PILOTO ALVES RACING</span>
-                <strong>${racerName}</strong>
+                <strong>${safeRacerName}</strong>
                 <div class="profile-tier-line">
                     <span class="profile-tier-badge" style="border-color:${tierColor}; color:${tierColor};">${data?.eloTier || 'Street'}</span>
                     <span>${data?.eloPoints || 0} PTS</span>
@@ -610,6 +651,7 @@ function displayGarage(data = {}) {
 
     const html = vehicles.map((vehicle, index) => {
         const model = typeof vehicle === 'string' ? vehicle : vehicle.modelName;
+        const vehicleClass = typeof vehicle === 'object' && vehicle.class ? vehicle.class : (['arbitergt','cazadortrc','clubhryc','dawn','growlerc','gstaspc3','gstc24','gstpmp7s1c','gstyanguard1b','hb450s','hb4503k','remusx','s790','schlag','str','strcoupe','sunrise1','tailgaters','vulture'].includes(String(model || '').toLowerCase()) ? 'A' : 'S');
         const name = (typeof vehicle === 'object' && vehicle.name) ? vehicle.name : String(model || '').toUpperCase();
         const safeModel = escapeHtml(model);
         const safeName = escapeHtml(name);
@@ -618,7 +660,7 @@ function displayGarage(data = {}) {
             <div class="garage-card">
                 <div class="garage-card-top">
                     <span class="garage-index">#${String(index + 1).padStart(2, '0')}</span>
-                    <span class="garage-class">Classe S</span>
+                    <span class="garage-class">Classe ${vehicleClass}</span>
                 </div>
                 <strong>${safeName}</strong>
                 <small>${safeModel}</small>

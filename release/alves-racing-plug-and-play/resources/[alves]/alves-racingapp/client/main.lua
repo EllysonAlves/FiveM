@@ -139,7 +139,8 @@ function finishRace()
         checkpoints = CurrentRaceData.TotalCheckpoints or #(CurrentRaceData.Checkpoints or {}),
         bestLap = CurrentRaceData.BestLap or 0,
         vehicle = vehicleName,
-        raceType = raceType
+        raceType = raceType,
+        raceClass = CurrentRaceData.RaceClass
     })
     
     Wait(500)
@@ -786,6 +787,7 @@ function startRaceSession(result)
         RaceId = result.raceId,
         RaceName = result.trackName,
         RaceType = raceType,
+        RaceClass = result.raceClass,
         Checkpoints = result.checkpoints,
         TotalLaps = result.laps,
         CurrentCheckpoint = 1,
@@ -1047,6 +1049,25 @@ RegisterNUICallback('showProfile', function(_, cb)
             action = 'showProfile',
             data = profile
         })
+    end)
+end)
+
+RegisterNUICallback('saveSettings', function(data, cb)
+    cb('ok')
+
+    CreateThread(function()
+        local result = lib.callback.await('alves-racingapp:updateRacerName', false, data and data.racerName or '')
+        if result and result.ok then
+            lib.notify({ type = 'success', description = 'Nome de corredor atualizado.' })
+            local playerInfo = awaitServerCallback('alves-racingapp:getPlayerInfo')
+            if playerInfo then
+                SendNUIMessage({ action = 'openTablet', data = { player = playerInfo, onlineCount = awaitServerCallback('alves-racingapp:getOnlineCount') or 0, theme = Config.Theme } })
+            end
+            SendNUIMessage({ action = 'settingsSaved', data = { racerName = result.racername } })
+        else
+            lib.notify({ type = 'error', description = (result and result.message) or 'Não consegui salvar as configurações.' })
+            SendNUIMessage({ action = 'settingsSaveFailed', data = { message = (result and result.message) or 'Falha ao salvar.' } })
+        end
     end)
 end)
 

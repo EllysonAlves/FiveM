@@ -5,12 +5,45 @@ print('^2[Alves Racing]^0 Server iniciado!')
 
 -- ==================== CONFIGURAÇÃO ====================
 local function getRaceVehicles()
+    if Config.RaceVehiclesByClass then
+        local vehicles = {}
+        for _, classVehicles in pairs(Config.RaceVehiclesByClass) do
+            for _, vehicle in ipairs(classVehicles or {}) do
+                vehicles[#vehicles + 1] = vehicle
+            end
+        end
+        if #vehicles > 0 then return vehicles end
+    end
+
     if Config.RaceVehicles and #Config.RaceVehicles > 0 then
         return Config.RaceVehicles
     end
 
     -- Fallback seguro caso alguém apague a lista do config.lua.
     return { 'sultanrs' }
+end
+
+local function getRaceVehiclesByClass(className)
+    className = className and tostring(className):upper() or nil
+    if className and Config.RaceVehiclesByClass and Config.RaceVehiclesByClass[className] and #Config.RaceVehiclesByClass[className] > 0 then
+        return Config.RaceVehiclesByClass[className]
+    end
+    return getRaceVehicles()
+end
+
+local function getVehicleClass(modelName)
+    modelName = modelName and tostring(modelName):lower() or nil
+    if not modelName then return 'S' end
+    for className, vehicles in pairs(Config.RaceVehiclesByClass or {}) do
+        for _, vehicle in ipairs(vehicles or {}) do
+            if tostring(vehicle):lower() == modelName then return tostring(className):upper() end
+        end
+    end
+    return 'S'
+end
+
+local function getLobbyKey(raceType, raceClass)
+    return ('%s:%s'):format(raceType == 'ranked' and 'ranked' or 'casual', raceClass or 'MIX')
 end
 
 -- Sistema de Tiers ELO
@@ -25,6 +58,8 @@ local Tracks = {}
 local activeRaces = {}
 local raceLobbies = {}
 local TrackTimesColumns = {}
+local getCitizenId
+local getRacerRecordByCitizenId
 
 local function trackTimesHasColumn(column)
     return TrackTimesColumns[column] == true
@@ -203,10 +238,17 @@ MySQL.ready(function()
 end)
 
 -- ==================== FUNÇÕES AUXILIARES ====================
-local function getCitizenId(src)
+function getCitizenId(src)
     local player = exports.qbx_core:GetPlayer(tonumber(src))
     if not player then return nil end
     return player.PlayerData.citizenid
+end
+
+local function sanitizeRacerName(value)
+    value = tostring(value or ''):gsub('^%s+', ''):gsub('%s+$', ''):gsub('%s+', ' ')
+    value = value:gsub('[^%w%s%-%_%.%[%]%(%)]', '')
+    if #value < 3 or #value > 24 then return nil end
+    return value
 end
 
 local function getOrCreateRacer(src)
@@ -240,7 +282,7 @@ local function getOrCreateRacer(src)
 end
 
 
-local function getRacerRecordByCitizenId(citizenId)
+function getRacerRecordByCitizenId(citizenId)
     local rows = MySQL.query.await('SELECT racerid, racername, ranking, races, wins, elo_points, elo_tier FROM racer_names WHERE citizenid = ? AND active = 1 LIMIT 1', {citizenId})
     return rows and rows[1] or nil
 end
@@ -305,9 +347,9 @@ local function getRandomTrackOptions(amount)
     return options
 end
 
-local function getRandomVehicleOptions(amount)
+local function getRandomVehicleOptions(amount, className)
     local pool = {}
-    for _, vehicle in ipairs(getRaceVehicles()) do
+    for _, vehicle in ipairs(getRaceVehiclesByClass(className)) do
         pool[#pool + 1] = vehicle
     end
 
@@ -317,6 +359,33 @@ local function getRandomVehicleOptions(amount)
         options[#options + 1] = table.remove(pool, index)
     end
     return options
+end
+
+local function pickWeightedVehicleClass(weights)
+    weights = weights or {}
+    local total = 0
+    for _, weight in pairs(weights) do total = total + (tonumber(weight) or 0) end
+    if total <= 0 then return nil end
+
+    local roll = math.random() * total
+    local cursor = 0
+    for className, weight in pairs(weights) do
+        cursor = cursor + (tonumber(weight) or 0)
+        if roll <= cursor then return tostring(className):upper() end
+    end
+    return nil
+end
+
+local function getPreferredRankedVehicleClass(src)
+    local citizenId = getCitizenId(src)
+    local tierName = 'Street'
+    if citizenId then
+        local racer = getRacerRecordByCitizenId(citizenId)
+        tierName = racer and racer.elo_tier or tierName
+    end
+
+    local weightsByTier = Config.RankedVehicleClassWeightsByTier or {}
+    return pickWeightedVehicleClass(weightsByTier[tierName] or weightsByTier.default) or 'S'
 end
 
 local function countTable(tbl)
@@ -356,6 +425,7 @@ local function buildLobbyState(lobby)
     return {
         lobbyId = lobby.id,
         raceType = lobby.raceType,
+        raceClass = lobby.raceClass,
         endsAt = lobby.endsAt,
         secondsLeft = math.max(0, lobby.endsAt - os.time()),
         mapOptions = lobby.mapOptions,
@@ -429,7 +499,7 @@ end
 local function startLobbyRace(lobby)
     if not lobby or lobby.started then return end
     lobby.started = true
-    raceLobbies[lobby.raceType] = nil
+    raceLobbies[getLobbyKey(lobby.raceType, lobby.raceClass)] = nil
 
     if countTable(lobby.players) == 0 then return end
 
@@ -452,6 +522,7 @@ local function startLobbyRace(lobby)
         trackId = winningMap.id,
         trackName = track.name,
         raceType = lobby.raceType,
+        raceClass = lobby.raceClass,
         laps = laps,
         startTime = os.time(),
         totalRacers = totalRacers,
@@ -475,7 +546,8 @@ local function startLobbyRace(lobby)
             laps = laps,
             checkpoints = checkpoints,
             totalRacers = totalRacers,
-            raceType = lobby.raceType
+            raceType = lobby.raceType,
+            raceClass = lobby.raceClass
         })
     end
 
@@ -493,18 +565,21 @@ local function scheduleLobbyStart(lobby)
     end)
 end
 
-local function getOrCreateLobby(raceType)
+local function getOrCreateLobby(raceType, src, desiredClass)
     raceType = raceType == 'ranked' and 'ranked' or 'casual'
-    local lobby = raceLobbies[raceType]
+    local raceClass = raceType == 'ranked' and (desiredClass or getPreferredRankedVehicleClass(src)) or nil
+    local lobbyKey = getLobbyKey(raceType, raceClass)
+    local lobby = raceLobbies[lobbyKey]
     if lobby and not lobby.started then return lobby end
 
     local maps = getRandomTrackOptions(Config.LobbyMapOptions or 3)
-    local vehicles = getRandomVehicleOptions(Config.LobbyVehicleOptions or 3)
+    local vehicles = getRandomVehicleOptions(Config.LobbyVehicleOptions or 3, raceClass)
     if #maps == 0 or #vehicles == 0 then return nil end
 
     lobby = {
         id = ('%s_%d'):format(raceType, os.time()),
         raceType = raceType,
+        raceClass = raceClass,
         players = {},
         mapOptions = maps,
         vehicleOptions = vehicles,
@@ -512,7 +587,7 @@ local function getOrCreateLobby(raceType)
         version = 0,
         endsAt = os.time() + (Config.LobbyCountdownSeconds or 60)
     }
-    raceLobbies[raceType] = lobby
+    raceLobbies[lobbyKey] = lobby
     scheduleLobbyStart(lobby)
     return lobby
 end
@@ -806,6 +881,21 @@ lib.callback.register('alves-racingapp:saveVehiclePreset', function(src, data)
     return true
 end)
 
+lib.callback.register('alves-racingapp:updateRacerName', function(src, racerName)
+    local citizenId = getCitizenId(src)
+    local cleanName = sanitizeRacerName(racerName)
+    if not citizenId or not cleanName then
+        return { ok = false, message = 'Use um nome entre 3 e 24 caracteres.' }
+    end
+
+    getOrCreateRacer(src)
+    MySQL.update.await(
+        'UPDATE racer_names SET racername = ?, lasttouched = ? WHERE citizenid = ? AND active = 1',
+        { cleanName, os.date('%Y-%m-%d %H:%M:%S'), citizenId }
+    )
+    return { ok = true, racername = cleanName }
+end)
+
 lib.callback.register('alves-racingapp:getTracks', function(src)
     local tracks = {}
     for _, track in pairs(Tracks) do
@@ -995,8 +1085,9 @@ lib.callback.register('alves-racingapp:server:startQuickRace', function(src, rac
     end
 
     local normalizedRaceType = raceType == 'ranked' and 'ranked' or 'casual'
-    local existingLobby = raceLobbies[normalizedRaceType]
-    local lobby = getOrCreateLobby(raceType)
+    local preferredClass = normalizedRaceType == 'ranked' and getPreferredRankedVehicleClass(src) or nil
+    local existingLobby = raceLobbies[getLobbyKey(normalizedRaceType, preferredClass)]
+    local lobby = getOrCreateLobby(raceType, src, preferredClass)
     if not lobby then
         print('[Alves Racing] Não foi possível criar lobby: sem pistas ou veículos disponíveis')
         return nil
@@ -1022,7 +1113,13 @@ end)
 lib.callback.register('alves-racingapp:server:voteLobby', function(src, data)
     data = data or {}
     local raceType = data.raceType == 'ranked' and 'ranked' or 'casual'
-    local lobby = raceLobbies[raceType]
+    local lobby = nil
+    for _, candidate in pairs(raceLobbies) do
+        if candidate.raceType == raceType and candidate.players and candidate.players[src] then
+            lobby = candidate
+            break
+        end
+    end
     if not lobby or lobby.started or not lobby.players[src] then
         return nil
     end
@@ -1126,6 +1223,7 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
     local racerid = (racerData and racerData[1]) and racerData[1].racerid or 0
     
     local vehicleModel = data.vehicle or participant.vehicleModel or 'Unknown'
+    local vehicleClass = data.raceClass or race.raceClass or getVehicleClass(vehicleModel)
     local raceType = race.raceType or data.raceType or 'casual'
     local totalRacers = race.totalRacers or countTable(race.participants)
     local totalLaps = tonumber(data.laps) or race.laps or 0
@@ -1141,7 +1239,7 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
 
     local columns = { 'trackId', 'racerName', 'racerid', 'carClass', 'vehicleModel', 'raceType', 'time', 'timestamp' }
     local placeholders = { '?', '?', '?', '?', '?', '?', '?', '?' }
-    local values = { track.raceid, racerName, racerid, 'S', vehicleModel, raceType, totalTime, timestamp }
+    local values = { track.raceid, racerName, racerid, vehicleClass, vehicleModel, raceType, totalTime, timestamp }
 
     addInsertField(columns, placeholders, values, 'raceSessionId', data.raceId)
     addInsertField(columns, placeholders, values, 'trackName', track.name)
@@ -1206,13 +1304,13 @@ RegisterNetEvent('alves-racingapp:server:leaveRace', function()
     local src = source
     
     -- Remover de lobbies abertos
-    for _, lobby in pairs(raceLobbies) do
+    for lobbyKey, lobby in pairs(raceLobbies) do
         if lobby.players and lobby.players[src] then
             lobby.players[src] = nil
             broadcastLobby(lobby)
             if countTable(lobby.players) == 0 then
                 lobby.started = true
-                raceLobbies[lobby.raceType] = nil
+                raceLobbies[lobbyKey] = nil
             end
             break
         end

@@ -40,7 +40,7 @@
                         <span class="ui-icon">👤</span>
                         <span>PERFIL</span>
                     </div>
-                    <div class="menu-item" onclick="showComingSoon('Configurações')">
+                    <div class="menu-item" onclick="showSettings()">
                         <span class="ui-icon">⚙️</span>
                         <span>CONFIGURAÇÕES</span>
                     </div>
@@ -272,6 +272,32 @@
             <div class="modal-body">
                 <div class="profile-stats" id="profile-stats">
                     <!-- Conteúdo dinâmico -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIGURAÇÕES -->
+    <div id="modal-settings" class="modal hidden">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span class="ui-icon">⚙️</span>
+                    <h2>CONFIGURAÇÕES</h2>
+                </div>
+                <button class="modal-close" onclick="closeModal()">
+                    <span class="ui-icon">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-card">
+                    <label for="settings-racer-name">Nome de corredor</label>
+                    <p>Esse nome aparece no lobby, ranking global e histórico de corridas.</p>
+                    <div class="settings-row">
+                        <input id="settings-racer-name" maxlength="24" placeholder="Seu nome na pista">
+                        <button onclick="saveSettings()">Salvar</button>
+                    </div>
+                    <small id="settings-feedback">3 a 24 caracteres. Letras, números, espaço, -, _, . e colchetes.</small>
                 </div>
             </div>
         </div>

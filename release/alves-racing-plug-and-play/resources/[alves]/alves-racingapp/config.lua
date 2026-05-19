@@ -30,6 +30,16 @@ Config.LobbyCountdownSeconds = 60
 Config.LobbyMapOptions = 3
 Config.LobbyVehicleOptions = 3
 
+-- Chance da classe do carro em corridas ranked por tier.
+-- Tiers baixos ficam mais em Classe A para a progressão começar menos brutal.
+Config.RankedVehicleClassWeightsByTier = {
+    Street = { A = 80, S = 20 },
+    ['Semi Slick'] = { A = 80, S = 20 },
+    Slick = { A = 35, S = 65 },
+    Profissional = { A = 15, S = 85 },
+    default = { A = 50, S = 50 }
+}
+
 -- Veículos disponíveis no lobby de corrida.
 -- Use o spawn name do veículo. Pode ser vanilla ou addon; o único requisito é
 -- o modelo estar carregável no servidor do jogador antes da corrida iniciar.
@@ -46,6 +56,31 @@ Config.RaceVehicles = {
     'feltzer2',
     'coquette',
     'kuruma',
+}
+
+Config.RaceVehiclesByClass = {
+    S = Config.RaceVehicles,
+    A = {
+        'arbitergt',
+        'cazadortrc',
+        'clubhryc',
+        'dawn',
+        'growlerc',
+        'gstaspc3',
+        'gstc24',
+        'gstpmp7s1c',
+        'gstyanguard1b',
+        'hb450s',
+        'hb4503k',
+        'remusx',
+        's790',
+        'schlag',
+        'str',
+        'strcoupe',
+        'sunrise1',
+        'tailgaters',
+        'vulture',
+    }
 }
 
 -- Voltas automáticas por distância da pista no banco.

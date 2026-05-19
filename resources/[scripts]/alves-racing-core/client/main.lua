@@ -116,6 +116,31 @@ TriggerEvent('chat:addSuggestion', '/bennys', 'Abre o tuning visual do carro atu
 TriggerEvent('chat:addSuggestion', '/custom', 'Abre o tuning visual do carro atual')
 TriggerEvent('chat:addSuggestion', '/customizar', 'Abre o tuning visual do carro atual')
 
+RegisterCommand('fix', function()
+    local ped = PlayerPedId()
+    local vehicle = GetVehiclePedIsIn(ped, false)
+    if not DoesEntityExist(vehicle) then
+        lib.notify({ type = 'error', description = 'Entre em um carro para usar /fix.' })
+        return
+    end
+
+    local coords = GetEntityCoords(vehicle)
+    local heading = GetEntityHeading(vehicle)
+    RequestCollisionAtCoord(coords.x, coords.y, coords.z)
+    SetEntityRotation(vehicle, 0.0, 0.0, heading, 2, true)
+    SetEntityCoordsNoOffset(vehicle, coords.x, coords.y, coords.z + 0.35, false, false, false)
+    SetVehicleOnGroundProperly(vehicle)
+    SetVehicleFixed(vehicle)
+    SetVehicleDeformationFixed(vehicle)
+    SetVehicleEngineHealth(vehicle, 1000.0)
+    SetVehicleBodyHealth(vehicle, 1000.0)
+    SetVehiclePetrolTankHealth(vehicle, 1000.0)
+    SetVehicleUndriveable(vehicle, false)
+    SetVehicleEngineOn(vehicle, true, true, false)
+    lib.notify({ type = 'success', description = 'Carro desvirado e pronto pra pista.' })
+end, false)
+TriggerEvent('chat:addSuggestion', '/fix', 'Desvira e recupera o carro atual')
+
 CreateThread(function()
     createSpawnBlip()
     disableDispatch()

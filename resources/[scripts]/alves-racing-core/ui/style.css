@@ -4,7 +4,7 @@ body{ margin:0; overflow:hidden; background:transparent; font-family:Arial, sans
 .thermal-hud{
   position:fixed;
   right:104px;
-  bottom:72px;
+  bottom:90px;
   z-index:80;
   display:flex;
   align-items:center;
@@ -24,7 +24,7 @@ body{ margin:0; overflow:hidden; background:transparent; font-family:Arial, sans
 @media(max-width:1600px){
   .thermal-hud{
     right:82px;
-    bottom:61px;
+    bottom:90px;
     transform:scale(.88);
     transform-origin:right bottom;
   }

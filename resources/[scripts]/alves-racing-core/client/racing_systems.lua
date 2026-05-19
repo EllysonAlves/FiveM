@@ -323,41 +323,44 @@ local function updateThermalSystem(vehicle, delta)
             local drivetrainTarget = throttle * math.min(13.0, (speed / 170.0) * 9.0 + 2.0) * drivenLoad
             targetTemp = rollingTarget + drivetrainTarget
         end
-        local heatRate = 0.014 + (throttle * drivenLoad * 0.007)
+        -- Aquecimento mais progressivo: antes 1-2 curvas já colocavam pneus no verde,
+        -- principalmente em RWD. Mantém o efeito de condução agressiva, mas exige
+        -- sequência de curvas/ritmo para chegar na janela ideal.
+        local heatRate = 0.006 + (throttle * drivenLoad * 0.0025)
         local directHeat = 0.0
 
         if speed > 55.0 and steering > 10.0 then
-            local cornerLoad = math.min(16.0, ((speed - 45.0) / 135.0) * (steering / 36.0) * 13.0)
+            local cornerLoad = math.min(10.0, ((speed - 45.0) / 135.0) * (steering / 36.0) * 8.0)
             if isFront then cornerLoad = cornerLoad * 1.02 end
             if isOuter then cornerLoad = cornerLoad * 1.30 else cornerLoad = cornerLoad * 0.56 end
             targetTemp = targetTemp + cornerLoad
-            heatRate = heatRate + 0.018
+            heatRate = heatRate + 0.007
         end
         if braking and speed > 40.0 then
             local brakeLoad = math.min(13.0, 3.0 + (speed / 180.0) * 6.0 + math.min(4.0, decel / 110.0))
             targetTemp = targetTemp + (isFront and brakeLoad or (brakeLoad * 0.32))
-            directHeat = directHeat + (isFront and math.min(1.8, decel / 190.0) or math.min(0.7, decel / 320.0))
-            heatRate = heatRate + (isFront and 0.025 or 0.012)
+            directHeat = directHeat + (isFront and math.min(0.75, decel / 360.0) or math.min(0.25, decel / 540.0))
+            heatRate = heatRate + (isFront and 0.010 or 0.004)
         end
         if slipKmh > 8.0 then
-            local slipHeat = math.min(30.0, (slipKmh - 8.0) * 0.95)
-            if isDriven then slipHeat = slipHeat * drivenLoad end
-            if isRear and handbrake then slipHeat = slipHeat * 1.35 end
+            local slipHeat = math.min(18.0, (slipKmh - 8.0) * 0.48)
+            if isDriven then slipHeat = slipHeat * (0.62 + (drivenLoad * 0.42)) end
+            if isRear and handbrake then slipHeat = slipHeat * 1.12 end
             targetTemp = targetTemp + slipHeat
-            directHeat = directHeat + math.min(18.0, slipHeat * 0.45)
-            heatRate = heatRate + 0.035
+            directHeat = directHeat + math.min(5.8, slipHeat * 0.18)
+            heatRate = heatRate + 0.012
         end
-        if throttle > 0.0 and speed > 8.0 and isDriven then directHeat = directHeat + (math.min(0.55, (speed / 180.0) * 0.34 + 0.12) * axleDriveShare) end
+        if throttle > 0.0 and speed > 8.0 and isDriven then directHeat = directHeat + (math.min(0.18, (speed / 180.0) * 0.10 + 0.04) * axleDriveShare) end
         if handbrake and speed > 25.0 then
-            targetTemp = targetTemp + (isRear and 14.0 or 4.0)
-            directHeat = directHeat + (isRear and 8.0 or 1.5)
-            heatRate = heatRate + (isRear and 0.08 or 0.025)
+            targetTemp = targetTemp + (isRear and 8.0 or 2.0)
+            directHeat = directHeat + (isRear and 2.4 or 0.5)
+            heatRate = heatRate + (isRear and 0.025 or 0.008)
         end
         if burnout and slipKmh > 12.0 then
             local burnoutLoad = isDriven and drivenLoad or 0.25
-            targetTemp = targetTemp + (72.0 * burnoutLoad)
-            directHeat = directHeat + (34.0 * burnoutLoad)
-            heatRate = heatRate + (0.18 * burnoutLoad)
+            targetTemp = targetTemp + (42.0 * burnoutLoad)
+            directHeat = directHeat + (12.0 * burnoutLoad)
+            heatRate = heatRate + (0.065 * burnoutLoad)
         end
         if airborne then targetTemp = math.max(28.0, targetTemp - 30.0); directHeat = directHeat * 0.20; heatRate = heatRate * 0.35 end
 

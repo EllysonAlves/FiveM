@@ -4,10 +4,10 @@ function stateFromTire(tire) {
   const temp = Number(tire?.temp ?? 30);
   const wear = Number(tire?.wear ?? 0);
   if (wear >= 72 || temp >= 130) return 'critical';
-  if (temp >= 110) return 'overheated';
-  if (temp >= 95) return 'hot';
-  if (temp >= 70) return 'ideal';
-  if (temp >= 50) return 'warming';
+  if (temp >= 118) return 'overheated';
+  if (temp >= 102) return 'hot';
+  if (temp >= 78) return 'ideal';
+  if (temp >= 56) return 'warming';
   return 'cold';
 }
 
