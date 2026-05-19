@@ -1575,6 +1575,69 @@ body::after{
     font-size:24px;
 }
 
+.race-gaps{
+    padding:10px;
+    border-radius:16px;
+    background:linear-gradient(180deg, rgba(12,12,18,.82), rgba(5,7,12,.76));
+    border:1px solid rgba(168,85,247,.18);
+    box-shadow:0 10px 24px rgba(0,0,0,.25);
+}
+
+.race-gaps-title{
+    margin-bottom:7px;
+    color:var(--purple-light);
+    font-size:11px;
+    font-weight:950;
+    letter-spacing:1.5px;
+}
+
+.race-gaps-list{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+}
+
+.race-gap-row{
+    min-height:28px;
+    display:grid;
+    grid-template-columns:34px minmax(0,1fr) 58px;
+    align-items:center;
+    gap:8px;
+    padding:5px 8px;
+    border-radius:10px;
+    background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.045);
+}
+
+.race-gap-row.me{
+    background:rgba(168,85,247,.14);
+    border-color:rgba(168,85,247,.30);
+}
+
+.race-gap-pos,
+.race-gap-time{
+    font-variant-numeric:tabular-nums;
+    font-size:12px;
+    font-weight:950;
+}
+
+.race-gap-pos{ color:var(--purple-light); }
+
+.race-gap-name{
+    min-width:0;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    color:#fff;
+    font-size:12px;
+    font-weight:850;
+}
+
+.race-gap-time{
+    text-align:right;
+    color:rgba(255,255,255,.76);
+}
+
 
 /* ==================== PROFILE V2 ==================== */
 #modal-profile .modal-content{

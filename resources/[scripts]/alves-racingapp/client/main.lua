@@ -12,6 +12,7 @@ local checkpointProps = {}
 local startTime = 0
 local lapStartTime = 0
 local phasedVehicle = 0
+local lastProgressSync = 0
 
 -- ==================== CONFIGURAÇÃO ====================
 -- Config vem de config.lua (shared_script). Mantemos fallback para compatibilidade.
@@ -867,6 +868,11 @@ RegisterNetEvent('alves-racingapp:client:globalLobbyAlert', function(data)
     SendNUIMessage({ action = 'showGlobalLobbyAlert', data = data })
 end)
 
+RegisterNetEvent('alves-racingapp:client:updateRaceGaps', function(data)
+    if not inRace or not CurrentRaceData.RaceId or data.raceId ~= CurrentRaceData.RaceId then return end
+    SendNUIMessage({ action = 'updateRaceGaps', data = data })
+end)
+
 -- ==================== NUI CALLBACKS ====================
 RegisterNUICallback('closeTablet', function(_, cb)
     SetNuiFocus(false, false)
@@ -1110,6 +1116,17 @@ function initRacingHudThread()
             if CurrentRaceData.Started then
                 CurrentRaceData.RaceTime = GetTimeDifference(GetGameTimer(), lapStartTime)
                 CurrentRaceData.TotalTime = GetTimeDifference(GetGameTimer(), startTime)
+                local now = GetGameTimer()
+                if now - lastProgressSync >= 500 then
+                    lastProgressSync = now
+                    TriggerServerEvent('alves-racingapp:server:updateRaceProgress', {
+                        raceId = CurrentRaceData.RaceId,
+                        lap = CurrentRaceData.Lap,
+                        checkpoint = CurrentRaceData.CurrentCheckpoint,
+                        totalCheckpoints = #CurrentRaceData.Checkpoints,
+                        elapsed = CurrentRaceData.TotalTime
+                    })
+                end
                 
                 SendNUIMessage({
                     action = 'updateRaceHUD',

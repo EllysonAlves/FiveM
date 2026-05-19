@@ -290,6 +290,7 @@ local function updateThermalSystem(vehicle, delta)
     local decel = math.max(0.0, (lastTireSpeedKmh - speed) / math.max(delta, 0.001))
     local braking = (IsControlPressed(0, 72) and speed > 8.0) or decel > 80.0
     local driveBiasFront = math.max(0.0, math.min(1.0, tireBaseHandling.driveBiasFront or 0.5))
+    local isAwd = driveBiasFront > 0.32 and driveBiasFront < 0.68
     local localSpeed = GetEntitySpeedVector(vehicle, true)
     local lateralSlipKmh = math.abs(localSpeed.x or 0.0) * 3.6
     lastTireSpeedKmh = speed
@@ -312,6 +313,16 @@ local function updateThermalSystem(vehicle, delta)
         local axleDriveShare = isFront and driveBiasFront or (1.0 - driveBiasFront)
         local isDriven = axleDriveShare > 0.08
         local drivenLoad = isDriven and (0.55 + (axleDriveShare * 0.90)) or 0.22
+        if isAwd then
+            -- Em carros 4x4/AWD a dianteira também trabalha bastante na tração,
+            -- curva e frenagem. Compensa a tendência do GTA/handling de aquecer
+            -- traseira rápido enquanto a dianteira fica azul demais.
+            if isFront then
+                drivenLoad = drivenLoad * 1.18
+            else
+                drivenLoad = drivenLoad * 0.90
+            end
+        end
         local wheelSlipKmh = getWheelSlipKmh(vehicle, tireWheelIndex[key], speed)
         local driftSlipKmh = math.max(0.0, lateralSlipKmh - 7.0) * (isOuter and 1.10 or 0.78)
         if handbrake and isRear then driftSlipKmh = driftSlipKmh * 1.55 end
@@ -320,6 +331,7 @@ local function updateThermalSystem(vehicle, delta)
         local targetTemp = 30.0
         if speed > 3.0 then
             local rollingTarget = 27.0 + math.min(30.0, speed * 0.17)
+            if isAwd and isFront then rollingTarget = rollingTarget + math.min(5.0, speed * 0.025) end
             local drivetrainTarget = throttle * math.min(13.0, (speed / 170.0) * 9.0 + 2.0) * drivenLoad
             targetTemp = rollingTarget + drivetrainTarget
         end
@@ -331,16 +343,17 @@ local function updateThermalSystem(vehicle, delta)
 
         if speed > 55.0 and steering > 10.0 then
             local cornerLoad = math.min(10.0, ((speed - 45.0) / 135.0) * (steering / 36.0) * 8.0)
-            if isFront then cornerLoad = cornerLoad * 1.02 end
+            if isFront then cornerLoad = cornerLoad * (isAwd and 1.28 or 1.08) end
+            if isAwd and isRear then cornerLoad = cornerLoad * 0.92 end
             if isOuter then cornerLoad = cornerLoad * 1.30 else cornerLoad = cornerLoad * 0.56 end
             targetTemp = targetTemp + cornerLoad
-            heatRate = heatRate + 0.007
+            heatRate = heatRate + (isAwd and isFront and 0.010 or 0.007)
         end
         if braking and speed > 40.0 then
             local brakeLoad = math.min(13.0, 3.0 + (speed / 180.0) * 6.0 + math.min(4.0, decel / 110.0))
             targetTemp = targetTemp + (isFront and brakeLoad or (brakeLoad * 0.32))
-            directHeat = directHeat + (isFront and math.min(0.75, decel / 360.0) or math.min(0.25, decel / 540.0))
-            heatRate = heatRate + (isFront and 0.010 or 0.004)
+            directHeat = directHeat + (isFront and math.min(isAwd and 1.15 or 0.75, decel / (isAwd and 300.0 or 360.0)) or math.min(0.25, decel / 540.0))
+            heatRate = heatRate + (isFront and (isAwd and 0.014 or 0.010) or 0.004)
         end
         if slipKmh > 8.0 then
             local slipHeat = math.min(18.0, (slipKmh - 8.0) * 0.48)
@@ -350,7 +363,12 @@ local function updateThermalSystem(vehicle, delta)
             directHeat = directHeat + math.min(5.8, slipHeat * 0.18)
             heatRate = heatRate + 0.012
         end
-        if throttle > 0.0 and speed > 8.0 and isDriven then directHeat = directHeat + (math.min(0.18, (speed / 180.0) * 0.10 + 0.04) * axleDriveShare) end
+        if throttle > 0.0 and speed > 8.0 and isDriven then
+            local axleHeatBias = axleDriveShare
+            if isAwd and isFront then axleHeatBias = math.max(axleHeatBias, 0.58) end
+            if isAwd and isRear then axleHeatBias = math.min(axleHeatBias, 0.46) end
+            directHeat = directHeat + (math.min(0.18, (speed / 180.0) * 0.10 + 0.04) * axleHeatBias)
+        end
         if handbrake and speed > 25.0 then
             targetTemp = targetTemp + (isRear and 8.0 or 2.0)
             directHeat = directHeat + (isRear and 2.4 or 0.5)

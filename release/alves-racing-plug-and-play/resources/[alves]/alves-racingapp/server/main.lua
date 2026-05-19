@@ -394,6 +394,64 @@ local function countTable(tbl)
     return count
 end
 
+local function buildRaceGaps(race)
+    local rows = {}
+    for src, participant in pairs(race.participants or {}) do
+        if not participant.finished then
+            local progress = participant.progress or {}
+            rows[#rows + 1] = {
+                source = src,
+                name = participant.racerName or 'Piloto',
+                lap = tonumber(progress.lap) or 1,
+                checkpoint = tonumber(progress.checkpoint) or 1,
+                elapsed = tonumber(progress.elapsed) or 0,
+                score = tonumber(progress.score) or 0,
+            }
+        end
+    end
+
+    table.sort(rows, function(a, b)
+        if a.score == b.score then return a.elapsed < b.elapsed end
+        return a.score > b.score
+    end)
+
+    local leader = rows[1]
+    local payload = {}
+    for index, row in ipairs(rows) do
+        local gapText = 'Líder'
+        if leader and row.source ~= leader.source then
+            local checkpointGap = (leader.score or 0) - (row.score or 0)
+            if checkpointGap <= 0 then
+                local gapSeconds = math.max(0.0, ((row.elapsed or 0) - (leader.elapsed or 0)) / 1000.0)
+                gapText = ('+%.1fs'):format(gapSeconds)
+            else
+                gapText = ('+%d CP'):format(math.floor(checkpointGap + 0.5))
+            end
+        end
+        payload[#payload + 1] = {
+            source = row.source,
+            name = row.name,
+            position = index,
+            gap = gapText,
+            lap = row.lap,
+            checkpoint = row.checkpoint
+        }
+    end
+    return payload
+end
+
+local function broadcastRaceGaps(race)
+    local gaps = buildRaceGaps(race)
+    for src in pairs(race.participants or {}) do
+        TriggerClientEvent('alves-racingapp:client:updateRaceGaps', src, {
+            raceId = race.raceId,
+            source = src,
+            gaps = gaps,
+            totalRacers = race.totalRacers or #gaps
+        })
+    end
+end
+
 local function buildLobbyState(lobby)
     local mapVotes = {}
     for _, option in ipairs(lobby.mapOptions or {}) do
@@ -1297,6 +1355,32 @@ RegisterNetEvent('alves-racingapp:server:finishRace', function(data)
     end
     if allFinished then
         activeRaces[data.raceId] = nil
+    end
+end)
+
+RegisterNetEvent('alves-racingapp:server:updateRaceProgress', function(data)
+    local src = source
+    data = data or {}
+    local race = data.raceId and activeRaces[data.raceId] or nil
+    local participant = race and race.participants and race.participants[src] or nil
+    if not race or not participant or participant.finished then return end
+
+    local lap = math.max(1, tonumber(data.lap) or 1)
+    local checkpoint = math.max(1, tonumber(data.checkpoint) or 1)
+    local totalCheckpoints = math.max(1, tonumber(data.totalCheckpoints) or 1)
+    local elapsed = math.max(0, tonumber(data.elapsed) or 0)
+
+    participant.progress = {
+        lap = lap,
+        checkpoint = checkpoint,
+        elapsed = elapsed,
+        score = ((lap - 1) * totalCheckpoints) + checkpoint
+    }
+
+    local now = GetGameTimer()
+    if not race.lastGapBroadcast or now - race.lastGapBroadcast >= 700 then
+        race.lastGapBroadcast = now
+        broadcastRaceGaps(race)
     end
 end)
 

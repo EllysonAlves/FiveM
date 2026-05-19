@@ -73,6 +73,7 @@ window.addEventListener('message', function(event) {
         case 'closeTablet': closeTablet(); break;
         case 'startCountdown': startCountdown(data.seconds); break;
         case 'updateRaceHUD': updateRaceHUD(data.data || {}); break;
+        case 'updateRaceGaps': updateRaceGaps(data.data || {}); break;
         case 'showRaceHUD': showRaceHUD(); break;
         case 'hideRaceHUD': hideRaceHUD(); break;
         case 'updateProfile': updateProfile(data.data || {}); break;
@@ -484,6 +485,33 @@ function stopTimer() {
     if (timerInterval) {
         clearInterval(timerInterval);
         timerInterval = null;
+    }
+}
+
+function updateRaceGaps(data) {
+    const gaps = Array.isArray(data?.gaps) ? data.gaps : [];
+    if (!gaps.length) {
+        addClass('#race-gaps', 'hidden');
+        return;
+    }
+
+    const meSource = data.source;
+    const html = gaps.slice(0, 6).map(row => {
+        const isMe = meSource && Number(row.source) === Number(meSource);
+        return `
+            <div class="race-gap-row${isMe ? ' me' : ''}">
+                <span class="race-gap-pos">#${row.position || '-'}</span>
+                <span class="race-gap-name">${escapeHtml(row.name || 'Piloto')}</span>
+                <span class="race-gap-time">${escapeHtml(row.gap || '--')}</span>
+            </div>`;
+    }).join('');
+
+    setHtml('#race-gaps-list', html);
+    removeClass('#race-gaps', 'hidden');
+
+    const myRow = gaps.find(row => meSource && Number(row.source) === Number(meSource));
+    if (myRow?.position) {
+        setHtml('#race-position', `<span class="race-value-accent">${myRow.position}º</span> <span class="stat-total">/ ${data.totalRacers || gaps.length}</span>`);
     }
 }
 
