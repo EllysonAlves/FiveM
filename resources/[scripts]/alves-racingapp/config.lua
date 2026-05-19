@@ -67,21 +67,6 @@ Config.RaceVehiclesByClass = {
     }
 }
 
--- Balanceamento de handling por classe/tração.
--- maxFlatVel usa MPH neste servidor. acceleration = fInitialDriveForce.
-Config.VehicleHandlingBalance = {
-    A = {
-        RWD = { maxFlatVel = 155.0, initialDriveForce = 0.36, steeringLock = 38.0, tractionMax = 2.45, tractionMin = 2.20 },
-        AWD = { maxFlatVel = 149.0, initialDriveForce = 0.39, steeringLock = 35.5, tractionMax = 2.38, tractionMin = 2.18 },
-        FWD = { maxFlatVel = 146.0, initialDriveForce = 0.34, steeringLock = 34.0, tractionMax = 2.32, tractionMin = 2.10 },
-    },
-    S = {
-        RWD = { maxFlatVel = 183.0, initialDriveForce = 0.45, steeringLock = 39.0, tractionMax = 2.65, tractionMin = 2.35 },
-        AWD = { maxFlatVel = 177.0, initialDriveForce = 0.49, steeringLock = 36.5, tractionMax = 2.58, tractionMin = 2.34 },
-        FWD = { maxFlatVel = 171.0, initialDriveForce = 0.41, steeringLock = 34.5, tractionMax = 2.48, tractionMin = 2.22 },
-    }
-}
-
 -- Voltas automáticas por distância da pista no banco.
 -- Regra do Alves Racing:
 -- - pistas curtas viram circuito com mais voltas;
